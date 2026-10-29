@@ -7,6 +7,7 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 define('ROOT_PATH', dirname(__DIR__));
 require_once ROOT_PATH . '/config/connect.php';          // provides $conn and $site
+require_once __DIR__ . '/content.php';                 // static genuine content (defaults)
 
 /* ================= SETTINGS (edit here) ================= */
 const STALE_GUARD             = true;                    // hide leftover data from the previous website
@@ -87,6 +88,9 @@ function excerpt($html, int $len = 140): string {
     $t = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string)$html), ENT_QUOTES, 'UTF-8')));
     return mb_strlen($t) > $len ? rtrim(mb_substr($t, 0, $len - 1)) . '…' : $t;
 }
+
+/** Safe read of a text value from the query string. */
+function qs(string $k): string { $v = $_GET[$k] ?? ''; return is_string($v) ? trim($v) : ''; }
 
 function slugify(string $s): string { return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($s)), '-') ?: 'item'; }
 function initials(string $n): string {
@@ -236,13 +240,22 @@ function get_contact(): array {
     return $c;
 }
 
-function page_meta(): array {
-    $r = db_all("SELECT meta_title, meta_key, meta_desc FROM meta WHERE page_url IN ('index.php','index','home','/','') ORDER BY id DESC LIMIT 1")[0] ?? [];
+function page_meta(string $page = 'index.php', array $d = []): array {
+    $d += [
+        'title'    => 'BHARAT TRADING | Indian Onion, Basmati Rice & Spice Exporter, Nashik',
+        'desc'     => 'APEDA-registered merchant exporter from Nashik supplying fresh Indian onions, Basmati and non-Basmati rice and Indian spices with customised export packing.',
+        'keywords' => 'Indian onion exporter, fresh Indian onions supplier, Basmati rice exporter, 1121 White Sella rice, Golden Sella rice, Non-Basmati rice supplier, turmeric exporter, red chilli exporter, cumin seeds supplier, coriander seeds exporter, black pepper supplier, Indian spices exporter',
+    ];
+    if ($page === 'index.php') {
+        $r = db_all("SELECT meta_title, meta_key, meta_desc FROM meta WHERE page_url IN ('index.php','index','home','/','') ORDER BY id DESC LIMIT 1")[0] ?? [];
+    } else {
+        $r = db_all("SELECT meta_title, meta_key, meta_desc FROM meta WHERE page_url = ? ORDER BY id DESC LIMIT 1", 's', [$page])[0] ?? [];
+    }
     if ($r && is_stale($r['meta_title'] ?? '', $r['meta_desc'] ?? '', $r['meta_key'] ?? '')) $r = [];
     return [
-        'title'    => trim($r['meta_title'] ?? '') ?: 'BHARAT TRADING | Indian Onion, Basmati Rice & Spice Exporter, Nashik',
-        'desc'     => trim($r['meta_desc'] ?? '') ?: 'APEDA-registered merchant exporter from Nashik supplying fresh Indian onions, Basmati and non-Basmati rice and Indian spices with customised export packing.',
-        'keywords' => trim($r['meta_key'] ?? '') ?: 'Indian onion exporter, fresh Indian onions supplier, Basmati rice exporter, 1121 White Sella rice, Golden Sella rice, Non-Basmati rice supplier, turmeric exporter, red chilli exporter, cumin seeds supplier, coriander seeds exporter, black pepper supplier, Indian spices exporter',
+        'title'    => trim($r['meta_title'] ?? '') ?: $d['title'],
+        'desc'     => trim($r['meta_desc'] ?? '') ?: $d['desc'],
+        'keywords' => trim($r['meta_key'] ?? '') ?: $d['keywords'],
     ];
 }
 
@@ -301,62 +314,154 @@ function get_categories(): array {
                     FROM categories c WHERE c.status = 1 $w ORDER BY c.id ASC", $t, $p);
     $out = [];
     foreach ($rows as $r) {
+        $slug = $r['slug_url'] ?: slugify($r['categories']);
         $out[] = [
             'name'  => $r['categories'],
+            'slug'  => $slug,
             'img'   => find_img($r['image'], ['categories', 'category', 'uploads/categories', 'uploads/category']),
-            'url'   => 'products.php?category=' . rawurlencode($r['slug_url'] ?: slugify($r['categories'])),
+            'url'   => 'products.php?category=' . rawurlencode($slug),
             'count' => (int)$r['total'],
             'icon'  => guess_group($r['categories']),
         ];
     }
     if (!$out) {
+        $n = [];
+        foreach (static_catalogue() as $sp) { $n[$sp['cat_slug']] = ($n[$sp['cat_slug']] ?? 0) + 1; }
         $out = [
-            ['name' => 'Fresh Indian onions', 'img' => '', 'url' => '#products', 'count' => 0, 'icon' => 'onion', 'note' => 'Sized and graded to buyer requirements'],
-            ['name' => 'Basmati & non-Basmati rice', 'img' => '', 'url' => '#products', 'count' => 0, 'icon' => 'rice', 'note' => '1121 White Sella, Golden Sella and more'],
-            ['name' => 'Indian spices', 'img' => '', 'url' => '#products', 'count' => 0, 'icon' => 'spice', 'note' => 'Turmeric, chilli, cumin, coriander, pepper'],
+            ['name' => 'Fresh Indian onions',        'slug' => 'fresh-produce', 'img' => '', 'url' => 'products.php?category=fresh-produce', 'count' => $n['fresh-produce'] ?? 0, 'icon' => 'onion'],
+            ['name' => 'Basmati & non-Basmati rice', 'slug' => 'rice',          'img' => '', 'url' => 'products.php?category=rice',          'count' => $n['rice'] ?? 0,          'icon' => 'rice'],
+            ['name' => 'Indian spices',              'slug' => 'spices',        'img' => '', 'url' => 'products.php?category=spices',        'count' => $n['spices'] ?? 0,        'icon' => 'spice'],
         ];
     }
     return $out;
 }
 
-function get_products(int $limit = 8): array {
+/** First usable image from a field that may hold one name or a comma separated list. */
+function first_img($field, array $subs): string {
+    foreach (explode(',', (string)$field) as $f) { $u = find_img(trim($f), $subs); if ($u) return $u; }
+    return '';
+}
+const PRODUCT_DIRS = ['products', 'product', 'uploads/products', 'uploads/product'];
+
+/** Every visible product (database first, built-in catalogue if the database has none). */
+function get_catalogue(): array {
+    static $out = null;
+    if ($out !== null) return $out;
     $t = ''; $p = [];
     $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
-    $rows = db_all("SELECT p.pro_name, p.short_desc, p.pro_img, p.slug_url, c.categories AS cat
+    $rows = db_all("SELECT p.pro_name, SUBSTRING(p.short_desc,1,700) AS short_desc, SUBSTRING(p.description,1,700) AS description,
+                           p.pro_img, p.slug_url, c.categories AS cat, c.slug_url AS cat_slug
                     FROM products p LEFT JOIN categories c ON c.cate_id = p.pro_cate
                     WHERE p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) $w
-                    ORDER BY p.id DESC LIMIT " . (int)$limit, $t, $p);
+                    ORDER BY p.id DESC LIMIT 500", $t, $p);
     $out = [];
     foreach ($rows as $r) {
+        $cat = $r['cat'] ?: 'Products';
         $out[] = [
-            'name'  => $r['pro_name'],
-            'cat'   => $r['cat'] ?: 'Products',
-            'desc'  => excerpt($r['short_desc'], 110),
-            'img'   => find_img($r['pro_img'], ['products', 'product', 'uploads/products', 'uploads/product']),
-            'url'   => 'product-details.php?slug=' . rawurlencode($r['slug_url']),
-            'group' => guess_group($r['pro_name']),
+            'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat,
+            'cat_slug' => $r['cat_slug'] ?: slugify($cat),
+            'desc' => excerpt($r['description'] ?: $r['short_desc'], 110),
+            'img'  => first_img($r['pro_img'], PRODUCT_DIRS),
+            'url'  => 'product-details.php?slug=' . rawurlencode($r['slug_url']),
+            'group' => guess_group($r['pro_name']), 'static' => false,
         ];
     }
-    if ($out) return $out;
-    $f = [
-        ['Fresh Indian Onions', 'Fresh produce', 'onion', 'Sourced in the size and grade you specify and packed for export.'],
-        ['Basmati Rice', 'Rice', 'rice', '1121 White Sella, Golden Sella and other available Sella varieties.'],
-        ['Non-Basmati Rice', 'Rice', 'rice', 'Supplied to the specification agreed with the buyer.'],
-        ['Turmeric', 'Spices', 'spice', 'Sourced to buyer specification with customised packing.'],
-        ['Red Chilli', 'Spices', 'spice', 'Available as per the grade and quality you require.'],
-        ['Cumin Seeds', 'Spices', 'spice', 'Bulk supply with packing arranged to your requirement.'],
-        ['Coriander Seeds', 'Spices', 'spice', 'Sourced as per buyer requirements, packed as agreed.'],
-        ['Black Pepper', 'Spices', 'spice', 'Quality inspection and shipment arranged as mutually agreed.'],
-    ];
-    foreach ($f as $x) { $out[] = ['name' => $x[0], 'cat' => $x[1], 'desc' => $x[3], 'img' => '', 'url' => '', 'group' => $x[2]]; }
+    if (!$out) {
+        foreach (static_catalogue() as $slug => $x) {
+            $out[] = ['name' => $x['name'], 'slug' => $slug, 'cat' => $x['cat'], 'cat_slug' => $x['cat_slug'], 'desc' => $x['desc'], 'img' => '',
+                      'url' => 'product-details.php?slug=' . $slug, 'group' => $x['group'], 'static' => true];
+        }
+    }
     return $out;
 }
 
-function count_products(): int {
-    $t = ''; $p = [];
+function get_products(int $limit = 8): array { return array_slice(get_catalogue(), 0, $limit); }
+function count_products(): int { return count(get_catalogue()) ?: 8; }
+
+/** Allows common formatting tags from the admin editor, removes scripts, inline styles and event handlers. */
+function safe_html($html, string $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><a><h2><h3><h4><table><thead><tbody><tfoot><tr><th><td><blockquote><span>'): string {
+    $h = (string)$html;
+    $h = preg_replace('~<h1(\b[^>]*)>~i', '<h2$1>', $h);
+    $h = preg_replace('~</h1>~i', '</h2>', $h);
+    $h = preg_replace('~<(script|style|iframe)\b.*?</\1>~is', '', $h);
+    $h = strip_tags($h, $allowed);
+    $h = preg_replace('/\s+on\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $h);
+    $h = preg_replace('/\s+style\s*=\s*("[^"]*"|\'[^\']*\')/i', '', $h);
+    $h = preg_replace('/(href)\s*=\s*(["\'])\s*javascript:[^"\']*\2/i', '$1=$2#$2', $h);
+    return trim($h);
+}
+
+/** One product with everything the details page needs (database product or built-in one). */
+function get_product_detail(string $slug): ?array {
+    $slug = trim($slug);
+    if ($slug === '') return null;
+    $t = 's'; $p = [$slug];
     $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
-    $r = db_all("SELECT COUNT(*) AS n FROM products p WHERE p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) $w", $t, $p);
-    return (int)($r[0]['n'] ?? 0) ?: 8;
+    $r = db_all("SELECT p.*, c.categories AS cat, c.slug_url AS cat_slug
+                 FROM products p LEFT JOIN categories c ON c.cate_id = p.pro_cate
+                 WHERE p.slug_url = ? AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) $w LIMIT 1", $t, $p)[0] ?? null;
+    if ($r) {
+        $imgs = [];
+        foreach (explode(',', (string)$r['pro_img']) as $f) { $u = find_img(trim($f), PRODUCT_DIRS); if ($u) $imgs[] = $u; }
+        foreach (db_all("SELECT image_path FROM product_images WHERE product_id IN (?, ?) ORDER BY id ASC", 'ii', [(int)$r['id'], (int)$r['pro_id']]) as $x) {
+            $u = find_img($x['image_path'], PRODUCT_DIRS);
+            if ($u && !in_array($u, $imgs, true)) $imgs[] = $u;
+        }
+        $cat = $r['cat'] ?: 'Products';
+        $facts = [['Product', $r['pro_name']], ['Category', $cat]];
+        if (trim((string)$r['brand_name']) !== '') $facts[] = ['Brand', $r['brand_name']];
+        array_push($facts, ['Packing', 'Customised as per buyer requirement'], ['Inspection', 'Arranged as mutually agreed']);
+        return [
+            'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat, 'cat_slug' => $r['cat_slug'] ?: slugify($cat),
+            'group' => guess_group($r['pro_name']), 'static' => false, 'images' => $imgs,
+            'summary' => excerpt($r['description'] ?: $r['short_desc'], 240),
+            'paras' => [], 'overview_html' => safe_html($r['description']), 'spec_html' => safe_html($r['short_desc']),
+            'facts' => $facts, 'uses' => [], 'faqs' => product_faqs($r['pro_name']),
+            'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
+        ];
+    }
+    $st = static_catalogue();
+    if (isset($st[$slug])) {
+        $x = $st[$slug];
+        return [
+            'name' => $x['name'], 'slug' => $slug, 'cat' => $x['cat'], 'cat_slug' => $x['cat_slug'], 'group' => $x['group'], 'static' => true, 'images' => [],
+            'summary' => $x['summary'], 'paras' => $x['about'], 'overview_html' => '', 'spec_html' => '',
+            'facts' => $x['facts'], 'uses' => $x['uses'], 'faqs' => product_faqs($x['name']),
+            'meta' => ['title' => '', 'desc' => '', 'keys' => ''],
+        ];
+    }
+    return null;
+}
+
+function get_related(string $slug, string $cat_slug, int $n = 4): array {
+    $same = []; $other = [];
+    foreach (get_catalogue() as $pr) {
+        if ($pr['slug'] === $slug) continue;
+        if ($pr['cat_slug'] === $cat_slug) { $same[] = $pr; } else { $other[] = $pr; }
+    }
+    return array_slice(array_merge($same, $other), 0, $n);
+}
+
+/** All About Us sections from the admin panel, in order (built-in text if none). */
+function get_about_sections(): array {
+    $t = ''; $p = [];
+    $w = stale_where(['title', 'content'], $t, $p);
+    $rows = db_all("SELECT title, content, image_url FROM about_sections WHERE 1=1 $w ORDER BY section_order ASC, id ASC LIMIT 6", $t, $p);
+    $out = [];
+    foreach ($rows as $r) {
+        if (trim(strip_tags($r['content'])) === '') continue;
+        $out[] = ['title' => $r['title'], 'content' => safe_html($r['content']), 'img' => find_img($r['image_url'], ['about_us', 'uploads/about_us'])];
+    }
+    return $out ?: [get_about()];
+}
+
+function get_certificates(): array {
+    $out = [];
+    foreach (db_all("SELECT title, image FROM certificates WHERE status = 1 ORDER BY cert_id DESC LIMIT 12") as $r) {
+        $src = find_img($r['image'], ['certificates', 'certificate', 'uploads/certificates', 'uploads/certificate']);
+        if ($src) $out[] = ['title' => $r['title'], 'src' => $src];
+    }
+    return $out;
 }
 
 function get_reviews(int $limit = 9): array {
