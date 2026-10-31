@@ -22,24 +22,19 @@ if (!isset($page_title)) {
 $page_desc = $page_desc ?? '';
 $page_keys = $page_keys ?? '';
 $favicon     = get_logo('favicon');
-$canonical   = $canonical ?? url($on_home ? '' : $current);
+$canonical   = $canonical ?? url($on_home ? '' : basename($current, '.php'));
 $css_file    = '/assets/css/style.css';
 
 // label, target, key. On the home page links to home sections become plain #anchors.
-$nav_def = [
-    ['Home', 'index.php', 'home'],
-    ['About Us', 'about.php', 'about'],
-    ['Products', 'products.php', 'products'],
-    ['Reviews', 'index.php#reviews', 'reviews'],
-    ['Blog', 'blog.php', 'blog'],
-    ['Gallery', 'index.php#gallery', 'gallery'],
-    ['Contact', 'contact.php', 'contact']
-];
+$nav_def = [['Home', '', 'home'], ['About Us', 'about', 'about'], ['Products', 'products', 'products'],
+            ['Reviews', '#reviews', 'reviews'], ['Blog', 'blog', 'blog'], ['Gallery', '#gallery', 'gallery'], ['Contact', 'contact', 'contact']];
 $nav = [];
 foreach ($nav_def as $n) {
-    $href = ($on_home && strpos($n[1], 'index.php') === 0) ? (substr($n[1], 9) ?: '#top') : url($n[1]);
+    $is_home_part = ($n[1] === '' || $n[1][0] === '#');
+    $href = ($on_home && $is_home_part) ? ($n[1] ?: '#top') : url($n[1]);
     $nav[] = [$n[0], $href, $n[2]];
 }
+
 $cta_href = $has_inquiry ? '#inquiry' : url('contact') . '#inquiry';
 
 $ld = array_filter([
@@ -69,9 +64,9 @@ $ld = array_filter([
     <meta property="og:url" content="<?= e($canonical) ?>">
     <meta name="theme-color" content="#14463a">
     <?php if ($favicon): ?>
-        <link rel="icon" href="<?= e($favicon) ?>"><?php endif; ?>
+    <link rel="icon" href="<?= e($favicon) ?>"><?php endif; ?>
     <script>
-        document.documentElement.classList.add('js')
+    document.documentElement.classList.add('js')
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,13 +74,13 @@ $ld = array_filter([
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="<?= e(url($css_file)) ?>?v=<?= (int)@filemtime(ROOT_PATH . $css_file) ?>">
     <?php foreach ($extra_css as $cf): ?>
-        <link rel="stylesheet"
-            href="<?= e(url('/assets/css/' . $cf)) ?>?v=<?= (int)@filemtime(ROOT_PATH . '/assets/css/' . $cf) ?>">
-        <link rel="stylesheet" href="assets/css/page.css">
+    <link rel="stylesheet"
+        href="<?= e(url('/assets/css/' . $cf)) ?>?v=<?= (int)@filemtime(ROOT_PATH . '/assets/css/' . $cf) ?>">
+    <link rel="stylesheet" href="assets/css/page.css">
     <?php endforeach; ?>
     <?= $extra_head ?? '' ?>
     <script type="application/ld+json">
-        <?= json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>
+    <?= json_encode($ld, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>
     </script>
 </head>
 
@@ -102,13 +97,13 @@ $ld = array_filter([
                         href="<?= e($contact['tel']) ?>"><?= icon('phone') ?><span><?= e($contact['phone_txt']) ?></span></a>
                 </li>
                 <?php if ($contact['hours']): ?><li class="tb-hours">
-                        <?= icon('clock') ?><span><?= e($contact['hours']) ?></span></li><?php endif; ?>
+                    <?= icon('clock') ?><span><?= e($contact['hours']) ?></span></li><?php endif; ?>
             </ul>
             <div class="tb-right">
                 <span class="tb-note"><?= icon('award') ?>APEDA-registered merchant exporter</span>
                 <?php foreach ($contact['social'] as $net => $link): ?>
-                    <a class="tb-soc" href="<?= e($link) ?>" target="_blank" rel="noopener"
-                        aria-label="<?= e(ucfirst($net)) ?>"><?= icon($net) ?></a>
+                <a class="tb-soc" href="<?= e($link) ?>" target="_blank" rel="noopener"
+                    aria-label="<?= e(ucfirst($net)) ?>"><?= icon($net) ?></a>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -121,9 +116,9 @@ $ld = array_filter([
             <nav class="nav" id="mainNav" aria-label="Primary">
                 <ul>
                     <?php foreach ($nav as $n): ?>
-                        <li><a href="<?= e($n[1]) ?>"
-                                <?= $n[2] === $active_key ? ' class="active" aria-current="page"' : '' ?>><?= e($n[0]) ?></a>
-                        </li>
+                    <li><a href="<?= e($n[1]) ?>"
+                            <?= $n[2] === $active_key ? ' class="active" aria-current="page"' : '' ?>><?= e($n[0]) ?></a>
+                    </li>
                     <?php endforeach; ?>
                 </ul>
                 <a class="btn btn-gold nav-cta" href="<?= e($cta_href) ?>">Get a quote</a>
