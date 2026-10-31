@@ -16,7 +16,7 @@ return [
         'logo'        => ['uploads/logo', 'admin/uploads/logo', 'admin/logo', 'logo'],
         'banner'      => ['uploads/banners', 'admin/uploads/banners'],
         'about'       => ['uploads/about_us', 'admin/uploads/about_us'],
-        'category'    => ['uploads/categories', 'uploads/category', 'uploads', 'admin/uploads/categories', 'admin/uploads'],
+        'category'    => ['uploads/categories', 'uploads/category', 'uploads', 'admin/uploads/category', 'admin/uploads'],
         'product'     => ['uploads/products', 'uploads/product', 'uploads', 'admin/uploads/products', 'admin/uploads'],
         'blog'        => ['uploads/blogs', 'uploads/blog', 'uploads', 'admin/uploads/blogs', 'admin/uploads'],
         'gallery'     => ['uploads/gallery', 'uploads', 'admin/uploads/gallery', 'admin/uploads'],

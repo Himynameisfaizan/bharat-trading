@@ -13,8 +13,8 @@ if ($local) {
     $host = 'localhost';
     $username = 'root';
     $password = '';
-    $dbName = 'bhagirath';
-    $site = "http://localhost/projects/bhagirath/";
+    $dbName = 'bharattrading';
+    $site = "http://localhost/projects/bharat-trading/";    
 } else {
     $host = 'localhost';
     $username = 'u799879276_bhagirath_db';
