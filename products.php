@@ -81,6 +81,8 @@ $crumbs       = $cat_name ? [['Products', url('products')], [$cat_name, null]] :
 require __DIR__ . '/includes/header.php';
 require __DIR__ . '/includes/page-banner.php';
 ?>
+
+<link rel="stylesheet" href="asset/css/page.css">
 <main id="main">
     <section class="section shop-sec">
         <div class="container shop">
