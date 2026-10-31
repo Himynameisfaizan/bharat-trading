@@ -1,10 +1,13 @@
 <?php
+
 /**
  * includes/functions.php
  * Shared helpers + data getters for BHARAT TRADING.
  * Every section on the home page reads from the database through these functions.
  */
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 define('ROOT_PATH', dirname(__DIR__));
 require_once ROOT_PATH . '/config/connect.php';          // provides $conn and $site ($local too)
 require_once __DIR__ . '/content.php';                 // static genuine content (defaults)
@@ -35,14 +38,19 @@ const COMPANY = [
 ];
 
 /* ================= BASIC HELPERS ================= */
-function e($s): string { return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+function e($s): string
+{
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
 
-function url(string $path = ''): string {
+function url(string $path = ''): string
+{
     global $site;
     return rtrim($site, '/') . '/' . ltrim($path, '/');
 }
 
-function db_all(string $sql, string $types = '', array $params = []): array {
+function db_all(string $sql, string $types = '', array $params = []): array
+{
     global $conn;
     try {
         if ($types === '') {
@@ -62,17 +70,21 @@ function db_all(string $sql, string $types = '', array $params = []): array {
     }
 }
 
-function is_stale(...$vals): bool {
+function is_stale(...$vals): bool
+{
     if (!STALE_GUARD) return false;
     foreach ($vals as $v) {
         $v = strtolower((string)$v);
-        foreach (STALE_MARKERS as $m) { if ($v !== '' && strpos($v, $m) !== false) return true; }
+        foreach (STALE_MARKERS as $m) {
+            if ($v !== '' && strpos($v, $m) !== false) return true;
+        }
     }
     return false;
 }
 
 /** Builds "AND col NOT LIKE ?" clauses so old-site rows are skipped in SQL. */
-function stale_where(array $cols, string &$types, array &$params): string {
+function stale_where(array $cols, string &$types, array &$params): string
+{
     if (!STALE_GUARD) return '';
     $sql = '';
     foreach ($cols as $c) {
@@ -85,41 +97,64 @@ function stale_where(array $cols, string &$types, array &$params): string {
     return $sql;
 }
 
-function excerpt($html, int $len = 140): string {
+function excerpt($html, int $len = 140): string
+{
     $t = trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags((string)$html), ENT_QUOTES, 'UTF-8')));
     return mb_strlen($t) > $len ? rtrim(mb_substr($t, 0, $len - 1)) . '…' : $t;
 }
 
 /** Safe read of a text value from the query string. */
-function qs(string $k): string { $v = $_GET[$k] ?? ''; return is_string($v) ? trim($v) : ''; }
+function qs(string $k): string
+{
+    $v = $_GET[$k] ?? '';
+    return is_string($v) ? trim($v) : '';
+}
 
-function slugify(string $s): string { return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($s)), '-') ?: 'item'; }
-function initials(string $n): string {
-    $p = preg_split('/\s+/', trim($n)); $o = '';
-    foreach (array_slice($p, 0, 2) as $w) { $o .= mb_strtoupper(mb_substr($w, 0, 1)); }
+function slugify(string $s): string
+{
+    return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($s)), '-') ?: 'item';
+}
+function initials(string $n): string
+{
+    $p = preg_split('/\s+/', trim($n));
+    $o = '';
+    foreach (array_slice($p, 0, 2) as $w) {
+        $o .= mb_strtoupper(mb_substr($w, 0, 1));
+    }
     return $o ?: 'C';
 }
-function fmt_date($d): string { $t = strtotime((string)$d); return $t ? date('d M Y', $t) : ''; }
-function csrf_token(): string {
+function fmt_date($d): string
+{
+    $t = strtotime((string)$d);
+    return $t ? date('d M Y', $t) : '';
+}
+function csrf_token(): string
+{
     if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
     return $_SESSION['csrf'];
 }
 
-function phone_intl(string $p): string {
+function phone_intl(string $p): string
+{
     $d = preg_replace('/\D+/', '', $p);
     return strlen($d) === 10 ? '91' . $d : $d;
 }
-function phone_display(string $p): string {
+function phone_display(string $p): string
+{
     $d = preg_replace('/\D+/', '', $p);
     if (strlen($d) === 10) return '+91 ' . substr($d, 0, 5) . ' ' . substr($d, 5);
     return $p;
 }
 
 /* ================= IMAGES & LOGO ================= */
-function enc_path(string $p): string { return implode('/', array_map('rawurlencode', explode('/', $p))); }
+function enc_path(string $p): string
+{
+    return implode('/', array_map('rawurlencode', explode('/', $p)));
+}
 
 /** Settings from config/paths.php */
-function img_cfg(): array {
+function img_cfg(): array
+{
     static $c = null;
     if ($c === null) {
         $f = ROOT_PATH . '/config/paths.php';
@@ -130,7 +165,8 @@ function img_cfg(): array {
 }
 
 /** file name => [url base ('' = this site), relative path], built by scanning the upload folders (cached 2 minutes). */
-function img_index(): array {
+function img_index(): array
+{
     static $idx = null;
     if ($idx !== null) return $idx;
     $cache = sys_get_temp_dir() . '/bt_img_' . md5(ROOT_PATH) . '.json';
@@ -138,7 +174,9 @@ function img_index(): array {
         $j = json_decode((string)@file_get_contents($cache), true);
         if (is_array($j)) return $idx = $j;
     }
-    $idx = []; $n = 0; $cfg = img_cfg();
+    $idx = [];
+    $n = 0;
+    $cfg = img_cfg();
     $scan = function (string $abs, string $rel, string $base) use (&$idx, &$n) {
         if (!is_dir($abs)) return;
         try {
@@ -151,10 +189,15 @@ function img_index(): array {
                 $sub = ltrim(str_replace('\\', '/', substr($f->getPathname(), strlen($abs))), '/');
                 $idx[$key] = [$base, trim($rel . '/' . $sub, '/')];
             }
-        } catch (Throwable $e) { /* unreadable folder: ignore */ }
+        } catch (Throwable $e) { /* unreadable folder: ignore */
+        }
     };
-    foreach ($cfg['search_roots'] as $root) { $scan(ROOT_PATH . '/' . trim($root, '/'), trim($root, '/'), ''); }
-    foreach ($cfg['external'] as $ext) { if (is_array($ext) && count($ext) === 2) $scan(rtrim($ext[0], '/\\'), '', $ext[1]); }
+    foreach ($cfg['search_roots'] as $root) {
+        $scan(ROOT_PATH . '/' . trim($root, '/'), trim($root, '/'), '');
+    }
+    foreach ($cfg['external'] as $ext) {
+        if (is_array($ext) && count($ext) === 2) $scan(rtrim($ext[0], '/\\'), '', $ext[1]);
+    }
     @file_put_contents($cache, json_encode($idx));
     return $idx;
 }
@@ -163,7 +206,8 @@ function img_index(): array {
  * Turns a file name / path stored in the database into a working URL, or '' if the file cannot be found.
  * $type is one of: logo banner about category product blog gallery testimonial certificate (see config/paths.php).
  */
-function find_img($file, string $type = ''): string {
+function find_img($file, string $type = ''): string
+{
     $file = trim((string)$file);
     if ($file === '') return '';
     if (preg_match('~^(https?:)?//~i', $file)) return $file;
@@ -181,7 +225,8 @@ function find_img($file, string $type = ''): string {
     return '';
 }
 
-function get_logo(string $loc): string {
+function get_logo(string $loc): string
+{
     static $cache = [];
     if (!isset($cache[$loc])) {
         $r = db_all("SELECT logo_path FROM logos WHERE location=? AND is_active=1 ORDER BY id DESC LIMIT 1", 's', [$loc]);
@@ -191,18 +236,20 @@ function get_logo(string $loc): string {
 }
 
 /** Uploaded logo if present, otherwise the built-in BHARAT TRADING wordmark. */
-function logo_html(string $loc = 'header', bool $light = false): string {
+function logo_html(string $loc = 'header', bool $light = false): string
+{
     $src = get_logo($loc);
     if ($src) {
         return '<img class="brand-img" src="' . e($src) . '" alt="' . e(COMPANY['legal']) . '" width="200" height="60">';
     }
     return '<span class="wordmark' . ($light ? ' wordmark--light' : '') . '" role="img" aria-label="' . e(COMPANY['legal']) . '">'
-         . '<span class="wm-mark" aria-hidden="true">B</span>'
-         . '<span class="wm-text"><b>BHARAT</b><i>TRADING</i></span></span>';
+        . '<span class="wm-mark" aria-hidden="true">B</span>'
+        . '<span class="wm-text"><b>BHARAT</b><i>TRADING</i></span></span>';
 }
 
 /* ================= ICONS ================= */
-function icon(string $n, string $cls = 'ico'): string {
+function icon(string $n, string $cls = 'ico'): string
+{
     static $i = null;
     if ($i === null) {
         $i = [
@@ -235,19 +282,26 @@ function icon(string $n, string $cls = 'ico'): string {
     if (!isset($i[$n])) return '';
     [$vb, $in] = $i[$n];
     $mode = $i[$n][2] ?? 's';
-    $attr = ['s' => 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"',
-             'b' => 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"',
-             'f' => 'fill="currentColor"', 'r' => ''][$mode];
+    $attr = [
+        's' => 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"',
+        'b' => 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"',
+        'f' => 'fill="currentColor"',
+        'r' => ''
+    ][$mode];
     return '<svg class="' . $cls . '" viewBox="' . $vb . '" ' . $attr . ' aria-hidden="true" focusable="false">' . $in . '</svg>';
 }
 
-function stars(int $n): string {
+function stars(int $n): string
+{
     $o = '<span class="stars" role="img" aria-label="' . $n . ' out of 5">';
-    for ($k = 1; $k <= 5; $k++) { $o .= '<span class="' . ($k <= $n ? 'on' : 'off') . '">' . icon('star') . '</span>'; }
+    for ($k = 1; $k <= 5; $k++) {
+        $o .= '<span class="' . ($k <= $n ? 'on' : 'off') . '">' . icon('star') . '</span>';
+    }
     return $o . '</span>';
 }
 
-function guess_group(string $name): string {
+function guess_group(string $name): string
+{
     $n = strtolower($name);
     if (strpos($n, 'onion') !== false) return 'onion';
     if (strpos($n, 'rice') !== false || strpos($n, 'basmati') !== false) return 'rice';
@@ -255,7 +309,8 @@ function guess_group(string $name): string {
 }
 
 /* ================= DATA GETTERS ================= */
-function get_contact(): array {
+function get_contact(): array
+{
     static $c = null;
     if ($c !== null) return $c;
     $r = db_all("SELECT * FROM contacts ORDER BY id DESC LIMIT 1")[0] ?? [];
@@ -288,7 +343,8 @@ function get_contact(): array {
     return $c;
 }
 
-function page_meta(string $page = 'index.php', array $d = []): array {
+function page_meta(string $page = 'index.php', array $d = []): array
+{
     $d += [
         'title'    => 'BHARAT TRADING | Indian Onion, Basmati Rice & Spice Exporter, Nashik',
         'desc'     => 'APEDA-registered merchant exporter from Nashik supplying fresh Indian onions, Basmati and non-Basmati rice and Indian spices with customised export packing.',
@@ -307,7 +363,8 @@ function page_meta(string $page = 'index.php', array $d = []): array {
     ];
 }
 
-function hero_fallback(): array {
+function hero_fallback(): array
+{
     return [
         ['img' => '', 'link' => '', 'title' => 'Indian agricultural commodities, exported with care', 'desc' => 'Fresh onions, Basmati and non-Basmati rice and Indian spices, sourced to your specification and shipped from Nashik.'],
         ['img' => '', 'link' => '', 'title' => 'Basmati rice in the Sella varieties buyers ask for', 'desc' => '1121 White Sella, Golden Sella and other available Sella varieties, packed the way your market needs it.'],
@@ -315,8 +372,10 @@ function hero_fallback(): array {
     ];
 }
 
-function get_banners(): array {
-    $t = 'i'; $p = [BANNER_ACTIVE_STATUS];
+function get_banners(): array
+{
+    $t = 'i';
+    $p = [BANNER_ACTIVE_STATUS];
     $w = stale_where(['title', 'description'], $t, $p);
     $rows = db_all("SELECT banner_path, title, description, link_url FROM banners
                     WHERE status = ? AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW()) $w
@@ -333,12 +392,15 @@ function get_banners(): array {
     return $out;
 }
 
-function get_about(): array {
-    $t = ''; $p = [];
+function get_about(): array
+{
+    $t = '';
+    $p = [];
     $w = stale_where(['title', 'content'], $t, $p);
     $r = db_all("SELECT title, content, image_url FROM about_sections WHERE 1=1 $w ORDER BY section_order ASC, id ASC LIMIT 1", $t, $p)[0] ?? null;
     if (!$r || trim(strip_tags($r['content'])) === '') {            // older admin table
-        $t = ''; $p = [];
+        $t = '';
+        $p = [];
         $w = stale_where(['title', 'content'], $t, $p);
         $r = db_all("SELECT title, content, image_url FROM about_us WHERE 1=1 $w ORDER BY id DESC LIMIT 1", $t, $p)[0] ?? null;
     }
@@ -352,15 +414,17 @@ function get_about(): array {
     return [
         'title'   => 'A merchant exporter built on buyer-first sourcing',
         'content' => '<p>Bharat Trading is an India-based proprietorship and merchant export business located in Nashik, Maharashtra. We source and supply agricultural commodities and food products for domestic and international buyers.</p>'
-                   . '<p>Our portfolio covers fresh Indian onions, Basmati rice including 1121 White Sella and Golden Sella, non-Basmati rice, turmeric and a range of Indian spices. Grades, specifications, packing and shipment arrangements are agreed with each buyer before an order is confirmed.</p>',
+            . '<p>Our portfolio covers fresh Indian onions, Basmati rice including 1121 White Sella and Golden Sella, non-Basmati rice, turmeric and a range of Indian spices. Grades, specifications, packing and shipment arrangements are agreed with each buyer before an order is confirmed.</p>',
         'img'     => '',
     ];
 }
 
-function get_categories(): array {
+function get_categories(): array
+{
     static $out = null;
     if ($out !== null) return $out;
-    $t = ''; $p = [];
+    $t = '';
+    $p = [];
     $w = stale_where(['c.categories', 'c.meta_title', 'c.meta_desc'], $t, $p);
     $rows = db_all("SELECT c.categories, c.image, c.slug_url,
                     (SELECT COUNT(*) FROM products p WHERE p.pro_cate = c.cate_id AND p.status = 1) AS total
@@ -372,14 +436,16 @@ function get_categories(): array {
             'name'  => $r['categories'],
             'slug'  => $slug,
             'img'   => find_img($r['image'], 'category'),
-            'url'   => 'products.php?category=' . rawurlencode($slug),
+            'url'   => 'category/' . rawurlencode($slug),
             'count' => (int)$r['total'],
             'icon'  => guess_group($r['categories']),
         ];
     }
     if (!$out) {
         $n = [];
-        foreach (static_catalogue() as $sp) { $n[$sp['cat_slug']] = ($n[$sp['cat_slug']] ?? 0) + 1; }
+        foreach (static_catalogue() as $sp) {
+            $n[$sp['cat_slug']] = ($n[$sp['cat_slug']] ?? 0) + 1;
+        }
         $out = [
             ['name' => 'Fresh Indian onions',        'slug' => 'fresh-produce', 'img' => '', 'url' => 'products.php?category=fresh-produce', 'count' => $n['fresh-produce'] ?? 0, 'icon' => 'onion'],
             ['name' => 'Basmati & non-Basmati rice', 'slug' => 'rice',          'img' => '', 'url' => 'products.php?category=rice',          'count' => $n['rice'] ?? 0,          'icon' => 'rice'],
@@ -390,16 +456,22 @@ function get_categories(): array {
 }
 
 /** First usable image from a field that may hold one name or a comma separated list. */
-function first_img($field, string $type): string {
-    foreach (explode(',', (string)$field) as $f) { $u = find_img(trim($f), $type); if ($u) return $u; }
+function first_img($field, string $type): string
+{
+    foreach (explode(',', (string)$field) as $f) {
+        $u = find_img(trim($f), $type);
+        if ($u) return $u;
+    }
     return '';
 }
 
 /** Every visible product (database first, built-in catalogue if the database has none). */
-function get_catalogue(): array {
+function get_catalogue(): array
+{
     static $out = null;
     if ($out !== null) return $out;
-    $t = ''; $p = [];
+    $t = '';
+    $p = [];
     $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
     $rows = db_all("SELECT p.pro_name, SUBSTRING(p.short_desc,1,700) AS short_desc, SUBSTRING(p.description,1,700) AS description,
                            p.pro_img, p.slug_url, c.categories AS cat, c.slug_url AS cat_slug
@@ -410,28 +482,47 @@ function get_catalogue(): array {
     foreach ($rows as $r) {
         $cat = $r['cat'] ?: 'Products';
         $out[] = [
-            'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat,
+            'name' => $r['pro_name'],
+            'slug' => $r['slug_url'],
+            'cat' => $cat,
             'cat_slug' => $r['cat_slug'] ?: slugify($cat),
             'desc' => excerpt($r['description'] ?: $r['short_desc'], 110),
             'img'  => first_img($r['pro_img'], 'product'),
-            'url'  => 'product-details.php?slug=' . rawurlencode($r['slug_url']),
-            'group' => guess_group($r['pro_name']), 'static' => false,
+            'url'  => 'product/' . rawurlencode($r['slug_url']),
+            'group' => guess_group($r['pro_name']),
+            'static' => false,
         ];
     }
     if (!$out) {
         foreach (static_catalogue() as $slug => $x) {
-            $out[] = ['name' => $x['name'], 'slug' => $slug, 'cat' => $x['cat'], 'cat_slug' => $x['cat_slug'], 'desc' => $x['desc'], 'img' => '',
-                      'url' => 'product-details.php?slug=' . $slug, 'group' => $x['group'], 'static' => true];
+            $out[] = [
+                'name' => $x['name'],
+                'slug' => $slug,
+                'cat' => $x['cat'],
+                'cat_slug' => $x['cat_slug'],
+                'desc' => $x['desc'],
+                'img' => '',
+                'url' => 'product/' . $slug,
+                'group' => $x['group'],
+                'static' => true
+            ];
         }
     }
     return $out;
 }
 
-function get_products(int $limit = 8): array { return array_slice(get_catalogue(), 0, $limit); }
-function count_products(): int { return count(get_catalogue()) ?: 8; }
+function get_products(int $limit = 8): array
+{
+    return array_slice(get_catalogue(), 0, $limit);
+}
+function count_products(): int
+{
+    return count(get_catalogue()) ?: 8;
+}
 
 /** Allows common formatting tags from the admin editor, removes scripts, inline styles and event handlers. */
-function safe_html($html, string $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><a><h2><h3><h4><table><thead><tbody><tfoot><tr><th><td><blockquote><span>'): string {
+function safe_html($html, string $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><a><h2><h3><h4><table><thead><tbody><tfoot><tr><th><td><blockquote><span>'): string
+{
     $h = (string)$html;
     $h = preg_replace('~<h1(\b[^>]*)>~i', '<h2$1>', $h);
     $h = preg_replace('~</h1>~i', '</h2>', $h);
@@ -445,13 +536,18 @@ function safe_html($html, string $allowed = '<p><br><strong><b><em><i><u><ul><ol
 
 /** One product with everything the details page needs (database product or built-in one). */
 /** Pulls the first table (spec rows) and the "MOQ" line out of the product's short description. */
-function extract_spec(string $html): array {
-    $facts = []; $moq = '';
-    $clean = function ($x) { return trim(preg_replace('/^[\s\x{00A0}]+|[\s\x{00A0}]+$/u', '', html_entity_decode(strip_tags($x), ENT_QUOTES, 'UTF-8'))); };
+function extract_spec(string $html): array
+{
+    $facts = [];
+    $moq = '';
+    $clean = function ($x) {
+        return trim(preg_replace('/^[\s\x{00A0}]+|[\s\x{00A0}]+$/u', '', html_entity_decode(strip_tags($x), ENT_QUOTES, 'UTF-8')));
+    };
     if (preg_match('~<table\b.*?</table>~is', $html, $m) && preg_match_all('~<tr\b.*?</tr>~is', $m[0], $trs)) {
         foreach ($trs[0] as $tr) {
             if (preg_match_all('~<t[hd]\b[^>]*>(.*?)</t[hd]>~is', $tr, $c) && count($c[1]) >= 2) {
-                $k = $clean($c[1][0]); $v = $clean($c[1][1]);
+                $k = $clean($c[1][0]);
+                $v = $clean($c[1][1]);
                 if ($k !== '' && $v !== '') $facts[] = [$k, $v];
             }
         }
@@ -464,22 +560,28 @@ function extract_spec(string $html): array {
     return [$facts, trim($html), $moq];
 }
 
-function get_product_detail(string $slug): ?array {
+function get_product_detail(string $slug): ?array
+{
     $slug = trim($slug);
     if ($slug === '') return null;
     $sel = "SELECT p.*, c.categories AS cat, c.slug_url AS cat_slug FROM products p LEFT JOIN categories c ON c.cate_id = p.pro_cate
             WHERE %s AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) %s LIMIT 1";
-    $t = 's'; $p = [$slug];
+    $t = 's';
+    $p = [$slug];
     $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
     $r = db_all(sprintf($sel, 'p.slug_url = ?', $w), $t, $p)[0] ?? null;
     if (!$r && ctype_digit($slug)) {                                  // old links use the numeric id, e.g. ?slug=283
-        $t = 'i'; $p = [(int)$slug];
+        $t = 'i';
+        $p = [(int)$slug];
         $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
         $r = db_all(sprintf($sel, 'p.id = ?', $w), $t, $p)[0] ?? null;
     }
     if ($r) {
         $imgs = [];
-        foreach (explode(',', (string)$r['pro_img']) as $f) { $u = find_img(trim($f), 'product'); if ($u) $imgs[] = $u; }
+        foreach (explode(',', (string)$r['pro_img']) as $f) {
+            $u = find_img(trim($f), 'product');
+            if ($u) $imgs[] = $u;
+        }
         foreach (db_all("SELECT image_path FROM product_images WHERE product_id IN (?, ?) ORDER BY id ASC", 'ii', [(int)$r['id'], (int)$r['pro_id']]) as $x) {
             $u = find_img($x['image_path'], 'product');
             if ($u && !in_array($u, $imgs, true)) $imgs[] = $u;
@@ -488,15 +590,26 @@ function get_product_detail(string $slug): ?array {
         $facts = [['Product', $r['pro_name']], ['Category', $cat]];
         if (trim((string)$r['brand_name']) !== '') $facts[] = ['Brand', $r['brand_name']];
         [$sf, $rest, $moq] = extract_spec((string)$r['short_desc']);
-        foreach (array_slice($sf, 0, 12) as $f) { $facts[] = $f; }
+        foreach (array_slice($sf, 0, 12) as $f) {
+            $facts[] = $f;
+        }
         $facts[] = ['Minimum order', $moq !== '' ? $moq : 'As per customer requirement'];
         array_push($facts, ['Packing', 'Customised as per buyer requirement'], ['Inspection', 'Arranged as mutually agreed']);
         return [
-            'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat, 'cat_slug' => $r['cat_slug'] ?: slugify($cat),
-            'group' => guess_group($r['pro_name']), 'static' => false, 'images' => $imgs,
+            'name' => $r['pro_name'],
+            'slug' => $r['slug_url'],
+            'cat' => $cat,
+            'cat_slug' => $r['cat_slug'] ?: slugify($cat),
+            'group' => guess_group($r['pro_name']),
+            'static' => false,
+            'images' => $imgs,
             'summary' => excerpt($r['description'] ?: $rest, 240),
-            'paras' => [], 'overview_html' => rewrite_links(safe_html($r['description'])), 'spec_html' => rewrite_links(safe_html($rest)),
-            'facts' => $facts, 'uses' => [], 'faqs' => product_faqs($r['pro_name']),
+            'paras' => [],
+            'overview_html' => rewrite_links(safe_html($r['description'])),
+            'spec_html' => rewrite_links(safe_html($rest)),
+            'facts' => $facts,
+            'uses' => [],
+            'faqs' => product_faqs($r['pro_name']),
             'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
         ];
     }
@@ -504,27 +617,46 @@ function get_product_detail(string $slug): ?array {
     if (isset($st[$slug])) {
         $x = $st[$slug];
         return [
-            'name' => $x['name'], 'slug' => $slug, 'cat' => $x['cat'], 'cat_slug' => $x['cat_slug'], 'group' => $x['group'], 'static' => true, 'images' => [],
-            'summary' => $x['summary'], 'paras' => $x['about'], 'overview_html' => '', 'spec_html' => '',
-            'facts' => $x['facts'], 'uses' => $x['uses'], 'faqs' => product_faqs($x['name']),
+            'name' => $x['name'],
+            'slug' => $slug,
+            'cat' => $x['cat'],
+            'cat_slug' => $x['cat_slug'],
+            'group' => $x['group'],
+            'static' => true,
+            'images' => [],
+            'summary' => $x['summary'],
+            'paras' => $x['about'],
+            'overview_html' => '',
+            'spec_html' => '',
+            'facts' => $x['facts'],
+            'uses' => $x['uses'],
+            'faqs' => product_faqs($x['name']),
             'meta' => ['title' => '', 'desc' => '', 'keys' => ''],
         ];
     }
     return null;
 }
 
-function get_related(string $slug, string $cat_slug, int $n = 4): array {
-    $same = []; $other = [];
+function get_related(string $slug, string $cat_slug, int $n = 4): array
+{
+    $same = [];
+    $other = [];
     foreach (get_catalogue() as $pr) {
         if ($pr['slug'] === $slug) continue;
-        if ($pr['cat_slug'] === $cat_slug) { $same[] = $pr; } else { $other[] = $pr; }
+        if ($pr['cat_slug'] === $cat_slug) {
+            $same[] = $pr;
+        } else {
+            $other[] = $pr;
+        }
     }
     return array_slice(array_merge($same, $other), 0, $n);
 }
 
 /** All About Us sections from the admin panel, in order (built-in text if none). */
-function get_about_sections(): array {
-    $t = ''; $p = [];
+function get_about_sections(): array
+{
+    $t = '';
+    $p = [];
     $w = stale_where(['title', 'content'], $t, $p);
     $rows = db_all("SELECT title, content, image_url FROM about_sections WHERE 1=1 $w ORDER BY section_order ASC, id ASC LIMIT 6", $t, $p);
     $out = [];
@@ -535,7 +667,8 @@ function get_about_sections(): array {
     return $out ?: [get_about()];
 }
 
-function get_certificates(): array {
+function get_certificates(): array
+{
     $out = [];
     foreach (db_all("SELECT title, image FROM certificates WHERE status = 1 ORDER BY cert_id DESC LIMIT 12") as $r) {
         $src = find_img($r['image'], 'certificate');
@@ -544,8 +677,10 @@ function get_certificates(): array {
     return $out;
 }
 
-function get_reviews(int $limit = 9): array {
-    $t = ''; $p = [];
+function get_reviews(int $limit = 9): array
+{
+    $t = '';
+    $p = [];
     $w = stale_where(['message', 'client_company', 'project_name'], $t, $p);
     $rows = db_all("SELECT name, designation, client_company, image, message, rating, project_name, project_date
                     FROM testimonials WHERE status = 1 $w ORDER BY featured DESC, display_order ASC, test_id DESC LIMIT " . (int)$limit, $t, $p);
@@ -566,16 +701,22 @@ function get_reviews(int $limit = 9): array {
     return $out;
 }
 
-function clean_author($a): string { $a = trim(explode('-', (string)$a)[0]); return $a !== '' ? $a : 'Admin'; }
+function clean_author($a): string
+{
+    $a = trim(explode('-', (string)$a)[0]);
+    return $a !== '' ? $a : 'Admin';
+}
 
 /** Points links that still use the old website address at this website, and opens other sites in a new tab. */
-function rewrite_links(string $html): string {
+function rewrite_links(string $html): string
+{
     return preg_replace_callback('~href=(["\'])(.*?)\1~i', function ($m) {
         $href = html_entity_decode($m[2]);
         $host = parse_url($href, PHP_URL_HOST);
         if (!$host) return $m[0];
         if (in_array(strtolower($host), OLD_SITE_HOSTS, true)) {
-            $q = parse_url($href, PHP_URL_QUERY); $f = parse_url($href, PHP_URL_FRAGMENT);
+            $q = parse_url($href, PHP_URL_QUERY);
+            $f = parse_url($href, PHP_URL_FRAGMENT);
             $href = url((string)parse_url($href, PHP_URL_PATH)) . ($q ? '?' . $q : '') . ($f ? '#' . $f : '');
             return 'href="' . e($href) . '"';
         }
@@ -583,13 +724,15 @@ function rewrite_links(string $html): string {
     }, $html);
 }
 
-function blog_card(array $r): array {
+function blog_card(array $r): array
+{
     $desc = trim((string)$r['meta_desc']) !== '' ? $r['meta_desc'] : $r['body'];
     return [
-        'title'  => $r['title'], 'slug' => $r['slug'],
+        'title'  => $r['title'],
+        'slug' => $r['slug'],
         'text'   => excerpt($desc, 165),
         'img'    => find_img($r['image'], 'blog'),
-        'url'    => 'blog-details.php?slug=' . rawurlencode($r['slug']),
+        'url'    => 'blog/' . rawurlencode($r['slug']),
         'date'   => fmt_date($r['created_at']),
         'author' => clean_author($r['author']),
         'mins'   => max(1, (int)round(((int)$r['len']) / 1000)),
@@ -597,26 +740,44 @@ function blog_card(array $r): array {
 }
 
 /** Blog posts for cards. $q searches title / keywords / description. */
-function get_blogs(int $limit = 3, int $offset = 0, string $q = '', string $exclude = ''): array {
-    $t = ''; $p = [];
+function get_blogs(int $limit = 3, int $offset = 0, string $q = '', string $exclude = ''): array
+{
+    $t = '';
+    $p = [];
     $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
-    if ($q !== '')       { $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)"; $t .= 'sss'; array_push($p, "%$q%", "%$q%", "%$q%"); }
-    if ($exclude !== '') { $w .= " AND slug <> ?"; $t .= 's'; $p[] = $exclude; }
+    if ($q !== '') {
+        $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)";
+        $t .= 'sss';
+        array_push($p, "%$q%", "%$q%", "%$q%");
+    }
+    if ($exclude !== '') {
+        $w .= " AND slug <> ?";
+        $t .= 's';
+        $p[] = $exclude;
+    }
     $rows = db_all("SELECT title, slug, author, image, meta_desc, SUBSTRING(description,1,1500) AS body, CHAR_LENGTH(description) AS len, created_at
                     FROM blogs WHERE status = 1 $w ORDER BY created_at DESC, blog_id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset, $t, $p);
     return array_map('blog_card', $rows);
 }
 
-function count_blogs(string $q = ''): int {
-    $t = ''; $p = [];
+function count_blogs(string $q = ''): int
+{
+    $t = '';
+    $p = [];
     $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
-    if ($q !== '') { $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)"; $t .= 'sss'; array_push($p, "%$q%", "%$q%", "%$q%"); }
+    if ($q !== '') {
+        $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)";
+        $t .= 'sss';
+        array_push($p, "%$q%", "%$q%", "%$q%");
+    }
     return (int)(db_all("SELECT COUNT(*) AS n FROM blogs WHERE status = 1 $w", $t, $p)[0]['n'] ?? 0);
 }
 
 /** One full article. Adds ids to the h2 headings (for the table of contents) and wraps tables so they scroll on phones. */
-function get_blog(string $slug): ?array {
-    $t = 's'; $p = [trim($slug)];
+function get_blog(string $slug): ?array
+{
+    $t = 's';
+    $p = [trim($slug)];
     $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
     $r = db_all("SELECT * FROM blogs WHERE slug = ? AND status = 1 $w LIMIT 1", $t, $p)[0] ?? null;
     if (!$r || trim($slug) === '') return null;
@@ -632,24 +793,34 @@ function get_blog(string $slug): ?array {
     $html = preg_replace('~<table\b~i', '<div class="table-wrap"><table', $html);
     $html = str_ireplace('</table>', '</table></div>', $html);
     return [
-        'title' => $r['title'], 'slug' => $r['slug'], 'html' => $html, 'toc' => $toc,
-        'img' => find_img($r['image'], 'blog'), 'author' => clean_author($r['author']),
-        'date' => fmt_date($r['created_at']), 'iso' => date('c', (int)strtotime((string)$r['created_at'])),
+        'title' => $r['title'],
+        'slug' => $r['slug'],
+        'html' => $html,
+        'toc' => $toc,
+        'img' => find_img($r['image'], 'blog'),
+        'author' => clean_author($r['author']),
+        'date' => fmt_date($r['created_at']),
+        'iso' => date('c', (int)strtotime((string)$r['created_at'])),
         'mins' => max(1, (int)round(mb_strlen((string)$r['description']) / 1000)),
         'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
     ];
 }
 
 /** Gallery table first; if it is empty, product and category photos are shown instead. */
-function get_gallery(int $limit = 9): array {
+function get_gallery(int $limit = 9): array
+{
     $out = [];
     foreach (db_all("SELECT image_name, image_path FROM gallery ORDER BY ID DESC LIMIT " . (int)$limit) as $r) {
         $src = find_img($r['image_path'], 'gallery');
         if ($src) $out[] = ['src' => $src, 'alt' => $r['image_name'] ?: 'Gallery image'];
     }
     if (!$out) {
-        foreach (get_catalogue() as $pr)  { if ($pr['img']) $out[] = ['src' => $pr['img'], 'alt' => $pr['name']]; }
-        foreach (get_categories() as $c)  { if ($c['img'])  $out[] = ['src' => $c['img'],  'alt' => $c['name']]; }
+        foreach (get_catalogue() as $pr) {
+            if ($pr['img']) $out[] = ['src' => $pr['img'], 'alt' => $pr['name']];
+        }
+        foreach (get_categories() as $c) {
+            if ($c['img'])  $out[] = ['src' => $c['img'],  'alt' => $c['name']];
+        }
     }
     return array_slice($out, 0, $limit);
 }

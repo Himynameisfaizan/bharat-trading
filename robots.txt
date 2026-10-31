@@ -1,13 +1,22 @@
-# robots.txt for Bhagirath Enterprise
+# robots.txt  -  BHARAT TRADING
+# Upload this file to the ROOT of the live domain (https://yourdomain.com/robots.txt).
 
 User-agent: *
+Allow: /
+
+# Private and technical folders / files
 Disallow: /admin/
 Disallow: /config/
 Disallow: /includes/
-Disallow: /newsletter-process.php
-Disallow: /inquiry-process.php
+Disallow: /cache/
+Disallow: /site-check.php
+Disallow: /inquiry-submit.php
 
-Allow: /
+# Internal search and sort pages (thin, duplicate content)
+Disallow: /*?q=
+Disallow: /*&q=
+Disallow: /*?sort=
+Disallow: /*&sort=
 
-# Sitemap link
-Sitemap: https://royalblue-gazelle-538620.hostingersite.com/sitemap.xml
+# CHANGE THIS to your real domain before going live
+Sitemap: https://www.example.com/sitemap.xml

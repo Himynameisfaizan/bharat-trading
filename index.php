@@ -32,23 +32,23 @@ require __DIR__ . '/includes/header.php';
     <section class="hero" id="top" aria-roledescription="carousel" aria-label="Featured">
         <div class="hero-slides">
             <?php foreach ($slides as $i => $s): $tag = $i === 0 ? 'h1' : 'h2'; ?>
-            <article class="hero-slide<?= $i === 0 ? ' is-active' : '' ?>"
-                aria-hidden="<?= $i === 0 ? 'false' : 'true' ?>">
-                <div class="hero-bg<?= $s['img'] ? '' : ' fb' . (($i % 3) + 1) ?>" <?php if ($s['img']): ?>
-                    style="background-image:url('<?= e($s['img']) ?>')" <?php endif; ?>></div>
-                <div class="container hero-inner">
-                    <div class="hero-copy">
-                        <p class="hero-kicker"><?= icon('award') ?>APEDA-registered merchant exporter from Nashik</p>
-                        <<?= $tag ?> class="hero-title"><?= e($s['title']) ?></<?= $tag ?>>
-                        <?php if ($s['desc']): ?><p class="hero-text"><?= e($s['desc']) ?></p><?php endif; ?>
-                        <div class="hero-cta">
-                            <a class="btn btn-gold"
-                                href="<?= e($s['link'] ?: '#inquiry') ?>"><?= $s['link'] ? 'Learn more' : 'Request a quote' ?><?= icon('arrow') ?></a>
-                            <a class="btn btn-ghost" href="#products">View products</a>
+                <article class="hero-slide<?= $i === 0 ? ' is-active' : '' ?>"
+                    aria-hidden="<?= $i === 0 ? 'false' : 'true' ?>">
+                    <div class="hero-bg<?= $s['img'] ? '' : ' fb' . (($i % 3) + 1) ?>" <?php if ($s['img']): ?>
+                        style="background-image:url('<?= e($s['img']) ?>')" <?php endif; ?>></div>
+                    <div class="container hero-inner">
+                        <div class="hero-copy">
+                            <p class="hero-kicker"><?= icon('award') ?>APEDA-registered merchant exporter from Nashik</p>
+                            <<?= $tag ?> class="hero-title"><?= e($s['title']) ?></<?= $tag ?>>
+                            <?php if ($s['desc']): ?><p class="hero-text"><?= e($s['desc']) ?></p><?php endif; ?>
+                            <div class="hero-cta">
+                                <a class="btn btn-gold"
+                                    href="<?= e($s['link'] ?: '#inquiry') ?>"><?= $s['link'] ? 'Learn more' : 'Request a quote' ?><?= icon('arrow') ?></a>
+                                <a class="btn btn-ghost" href="#products">View products</a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </article>
+                </article>
             <?php endforeach; ?>
         </div>
 
@@ -90,15 +90,15 @@ require __DIR__ . '/includes/header.php';
                 <div class="hero-count"><b id="heroCur">01</b><span>/ <?= sprintf('%02d', count($slides)) ?></span>
                 </div>
                 <?php if (count($slides) > 1): ?>
-                <div class="hero-dots">
-                    <?php foreach ($slides as $i => $s): ?><button type="button"
-                        class="<?= $i === 0 ? 'is-active' : '' ?>"
-                        aria-label="Go to slide <?= $i + 1 ?>"><i></i></button><?php endforeach; ?>
-                </div>
-                <div class="hero-arrows">
-                    <button type="button" id="heroPrev" aria-label="Previous slide"><?= icon('left') ?></button>
-                    <button type="button" id="heroNext" aria-label="Next slide"><?= icon('arrow') ?></button>
-                </div>
+                    <div class="hero-dots">
+                        <?php foreach ($slides as $i => $s): ?><button type="button"
+                                class="<?= $i === 0 ? 'is-active' : '' ?>"
+                                aria-label="Go to slide <?= $i + 1 ?>"><i></i></button><?php endforeach; ?>
+                    </div>
+                    <div class="hero-arrows">
+                        <button type="button" id="heroPrev" aria-label="Previous slide"><?= icon('left') ?></button>
+                        <button type="button" id="heroNext" aria-label="Next slide"><?= icon('arrow') ?></button>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -123,7 +123,8 @@ require __DIR__ . '/includes/header.php';
 
     <div class="marquee" aria-hidden="true">
         <div class="marquee-track">
-            <?php for ($rep = 0; $rep < 2; $rep++): foreach ($marquee as $mq): ?><span><?= e($mq) ?></span><?php endforeach; endfor; ?>
+            <?php for ($rep = 0; $rep < 2; $rep++): foreach ($marquee as $mq): ?><span><?= e($mq) ?></span><?php endforeach;
+                                                                                                    endfor; ?>
         </div>
     </div>
 
@@ -132,11 +133,11 @@ require __DIR__ . '/includes/header.php';
         <div class="container about-grid">
             <div class="about-media reveal">
                 <?php if ($about['img']): ?>
-                <img src="<?= e($about['img']) ?>" alt="About <?= e(COMPANY['name']) ?>" loading="lazy">
+                    <img src="<?= e($about['img']) ?>" alt="About <?= e(COMPANY['name']) ?>" loading="lazy">
                 <?php else: ?>
-                <div class="about-art">
-                    <span><?= icon('onion') ?></span><span><?= icon('rice') ?></span><span><?= icon('spice') ?></span>
-                </div>
+                    <div class="about-art">
+                        <span><?= icon('onion') ?></span><span><?= icon('rice') ?></span><span><?= icon('spice') ?></span>
+                    </div>
                 <?php endif; ?>
                 <div class="about-badge"><b>Nashik</b><span>Maharashtra, India</span></div>
             </div>
@@ -178,21 +179,21 @@ require __DIR__ . '/includes/header.php';
                     <p class="sec-sub">Three product families, sourced to the grade, size and packing your market needs.
                     </p>
                 </div>
-                <a class="link-arrow" href="<?= e(url('products.php')) ?>">Browse all products<?= icon('arrow') ?></a>
+                <a class="link-arrow" href="<?= e(url('products')) ?>">Browse all products<?= icon('arrow') ?></a>
             </header>
             <div class="cat-grid">
                 <?php foreach ($cats as $c): $href = strpos($c['url'], '#') === 0 ? $c['url'] : url($c['url']); ?>
-                <a class="cat-tile reveal" href="<?= e($href) ?>">
-                    <span class="cat-media">
-                        <?php if ($c['img']): ?><img src="<?= e($c['img']) ?>" alt="<?= e($c['name']) ?>"
-                            loading="lazy"><?php else: ?><span
-                            class="ph ph-<?= e($c['icon']) ?>"><?= icon($c['icon'], 'ph-ico') ?></span><?php endif; ?>
-                    </span>
-                    <span class="cat-info">
-                        <strong><?= e($c['name']) ?></strong>
-                        <em><?= $c['count'] > 0 ? $c['count'] . ($c['count'] === 1 ? ' product' : ' products') : e($c['note'] ?? 'Explore the range') ?></em>
-                    </span>
-                </a>
+                    <a class="cat-tile reveal" href="<?= e($href) ?>">
+                        <span class="cat-media">
+                            <?php if ($c['img']): ?><img src="<?= e($c['img']) ?>" alt="<?= e($c['name']) ?>"
+                                    loading="lazy"><?php else: ?><span
+                                    class="ph ph-<?= e($c['icon']) ?>"><?= icon($c['icon'], 'ph-ico') ?></span><?php endif; ?>
+                        </span>
+                        <span class="cat-info">
+                            <strong><?= e($c['name']) ?></strong>
+                            <em><?= $c['count'] > 0 ? $c['count'] . ($c['count'] === 1 ? ' product' : ' products') : e($c['note'] ?? 'Explore the range') ?></em>
+                        </span>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -207,38 +208,38 @@ require __DIR__ . '/includes/header.php';
                     <p class="sec-sub">Pricing is quoted per enquiry, based on specification, quantity, packing,
                         destination and agreed FOB or CIF terms.</p>
                 </div>
-                <a class="link-arrow" href="<?= e(url('products.php')) ?>">View full catalogue<?= icon('arrow') ?></a>
+                <a class="link-arrow" href="<?= e(url('products')) ?>">View full catalogue<?= icon('arrow') ?></a>
             </header>
 
             <?php if (count($prod_cats) > 1): ?>
-            <div class="ptabs reveal" role="tablist" aria-label="Filter products">
-                <button type="button" class="ptab is-active" data-filter="all">All</button>
-                <?php foreach ($prod_cats as $pc): ?><button type="button" class="ptab"
-                    data-filter="<?= e(slugify($pc)) ?>"><?= e($pc) ?></button><?php endforeach; ?>
-            </div>
+                <div class="ptabs reveal" role="tablist" aria-label="Filter products">
+                    <button type="button" class="ptab is-active" data-filter="all">All</button>
+                    <?php foreach ($prod_cats as $pc): ?><button type="button" class="ptab"
+                            data-filter="<?= e(slugify($pc)) ?>"><?= e($pc) ?></button><?php endforeach; ?>
+                </div>
             <?php endif; ?>
 
             <div class="pgrid">
                 <?php foreach ($products as $p): ?>
-                <article class="pcard reveal" data-cat="<?= e(slugify($p['cat'])) ?>">
-                    <div class="pcard-media">
-                        <?php if ($p['img']): ?><img src="<?= e($p['img']) ?>" alt="<?= e($p['name']) ?>"
-                            loading="lazy"><?php else: ?><span
-                            class="ph ph-<?= e($p['group']) ?>"><?= icon($p['group'], 'ph-ico') ?></span><?php endif; ?>
-                        <span class="pcard-tag"><?= e($p['cat']) ?></span>
-                    </div>
-                    <div class="pcard-body">
-                        <h3><?= e($p['name']) ?></h3>
-                        <?php if ($p['desc']): ?><p><?= e($p['desc']) ?></p><?php endif; ?>
-                        <div class="pcard-foot">
-                            <span class="price-note">Price on enquiry</span>
-                            <?php if ($p['url']): ?><a class="pcard-link"
-                                href="<?= e(url($p['url'])) ?>">Details<?= icon('arrow') ?></a><?php endif; ?>
-                            <a class="btn btn-brand btn-sm" href="#inquiry" data-quote="<?= e($p['name']) ?>">Get
-                                quote</a>
+                    <article class="pcard reveal" data-cat="<?= e(slugify($p['cat'])) ?>">
+                        <div class="pcard-media">
+                            <?php if ($p['img']): ?><img src="<?= e($p['img']) ?>" alt="<?= e($p['name']) ?>"
+                                    loading="lazy"><?php else: ?><span
+                                    class="ph ph-<?= e($p['group']) ?>"><?= icon($p['group'], 'ph-ico') ?></span><?php endif; ?>
+                            <span class="pcard-tag"><?= e($p['cat']) ?></span>
                         </div>
-                    </div>
-                </article>
+                        <div class="pcard-body">
+                            <h3><?= e($p['name']) ?></h3>
+                            <?php if ($p['desc']): ?><p><?= e($p['desc']) ?></p><?php endif; ?>
+                            <div class="pcard-foot">
+                                <span class="price-note">Price on enquiry</span>
+                                <?php if ($p['url']): ?><a class="pcard-link"
+                                        href="<?= e(url($p['url'])) ?>">Details<?= icon('arrow') ?></a><?php endif; ?>
+                                <a class="btn btn-brand btn-sm" href="#inquiry" data-quote="<?= e($p['name']) ?>">Get
+                                    quote</a>
+                            </div>
+                        </div>
+                    </article>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -252,14 +253,14 @@ require __DIR__ . '/includes/header.php';
                     <h2 class="sec-title">How an order works</h2>
                     <p class="sec-sub">From first message to shipment, each step is agreed with you in advance.</p>
                 </div>
-                <a class="link-arrow" href="<?= e(url('about.php')) ?>">More about us<?= icon('arrow') ?></a>
+                <a class="link-arrow" href="<?= e(url('about')) ?>">More about us<?= icon('arrow') ?></a>
             </header>
             <ol class="steps steps--light">
                 <?php foreach (process_steps() as $i => $st): ?>
-                <li class="step reveal"><span class="step-n"><?= sprintf('%02d', $i + 1) ?></span>
-                    <h3><?= e($st[0]) ?></h3>
-                    <p><?= e($st[1]) ?></p>
-                </li>
+                    <li class="step reveal"><span class="step-n"><?= sprintf('%02d', $i + 1) ?></span>
+                        <h3><?= e($st[0]) ?></h3>
+                        <p><?= e($st[1]) ?></p>
+                    </li>
                 <?php endforeach; ?>
             </ol>
         </div>
@@ -281,59 +282,60 @@ require __DIR__ . '/includes/header.php';
                         <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><?= icon('g', 'g-ico') ?><span>Reviews</span><?php else: ?><?= icon('star', 'g-ico g-ico--star') ?><span>Client
                             reviews</span><?php endif; ?></div>
                     <?php if ($reviews): ?>
-                    <div class="rv-score"><b><?= number_format($avg, 1) ?></b><?= stars((int)round($avg)) ?></div>
-                    <p>Average from <?= count($reviews) ?> <?= count($reviews) === 1 ? 'review' : 'reviews' ?></p>
+                        <div class="rv-score"><b><?= number_format($avg, 1) ?></b><?= stars((int)round($avg)) ?></div>
+                        <p>Average from <?= count($reviews) ?> <?= count($reviews) === 1 ? 'review' : 'reviews' ?></p>
                     <?php else: ?>
-                    <div class="rv-score rv-score--empty"><?= stars(5) ?></div>
-                    <p>Worked with Bharat Trading? Tell other buyers about it.</p>
+                        <div class="rv-score rv-score--empty"><?= stars(5) ?></div>
+                        <p>Worked with Bharat Trading? Tell other buyers about it.</p>
                     <?php endif; ?>
                     <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><a class="btn btn-gold btn-sm" href="<?= e($review_url) ?>"
-                        target="_blank" rel="noopener">Write a review</a><?php else: ?><a class="btn btn-gold btn-sm"
-                        href="#inquiry">Work with us</a><?php endif; ?>
+                            target="_blank" rel="noopener">Write a review</a><?php else: ?><a class="btn btn-gold btn-sm"
+                            href="#inquiry">Work with us</a><?php endif; ?>
                 </div>
 
                 <?php if ($reviews): ?>
-                <div class="rv-main reveal">
-                    <div class="rv-track" id="rvTrack">
-                        <?php foreach ($reviews as $r): ?>
-                        <figure class="rv-card">
-                            <div class="rv-top">
-                                <span class="rv-av"><?php if ($r['img']): ?><img src="<?= e($r['img']) ?>" alt=""
-                                        loading="lazy"><?php else: ?><?= e(initials($r['name'])) ?><?php endif; ?></span>
-                                <div><b><?= e($r['name']) ?></b><span><?= e($r['role']) ?></span></div>
-                                <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><?= icon('g', 'g-ico g-ico--sm') ?><?php endif; ?>
-                            </div>
-                            <div class="rv-rate">
-                                <?= stars($r['rating']) ?><?php if ($r['date']): ?><time><?= e($r['date']) ?></time><?php endif; ?>
-                            </div>
-                            <blockquote><?= e($r['text']) ?></blockquote>
-                            <figcaption>
-                                <?php if ($r['topic']): ?><span><?= e($r['topic']) ?></span><?php endif; ?>
-                                <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><span class="rv-ver"><?= icon('check') ?>Posted on
-                                    Google</span><?php endif; ?>
-                            </figcaption>
-                        </figure>
-                        <?php endforeach; ?>
+                    <div class="rv-main reveal">
+                        <div class="rv-track" id="rvTrack">
+                            <?php foreach ($reviews as $r): ?>
+                                <figure class="rv-card">
+                                    <div class="rv-top">
+                                        <span class="rv-av"><?php if ($r['img']): ?><img src="<?= e($r['img']) ?>" alt=""
+                                                    loading="lazy"><?php else: ?><?= e(initials($r['name'])) ?><?php endif; ?></span>
+                                        <div><b><?= e($r['name']) ?></b><span><?= e($r['role']) ?></span></div>
+                                        <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><?= icon('g', 'g-ico g-ico--sm') ?><?php endif; ?>
+                                    </div>
+                                    <div class="rv-rate">
+                                        <?= stars($r['rating']) ?><?php if ($r['date']): ?><time><?= e($r['date']) ?></time><?php endif; ?>
+                                    </div>
+                                    <blockquote><?= e($r['text']) ?></blockquote>
+                                    <figcaption>
+                                        <?php if ($r['topic']): ?><span><?= e($r['topic']) ?></span><?php endif; ?>
+                                        <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><span class="rv-ver"><?= icon('check') ?>Posted on
+                                                Google</span><?php endif; ?>
+                                    </figcaption>
+                                </figure>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php if (count($reviews) > 2): ?>
+                            <div class="rv-nav"><button type="button" id="rvPrev"
+                                    aria-label="Previous reviews"><?= icon('left') ?></button><button type="button" id="rvNext"
+                                    aria-label="Next reviews"><?= icon('arrow') ?></button></div>
+                        <?php endif; ?>
                     </div>
-                    <?php if (count($reviews) > 2): ?>
-                    <div class="rv-nav"><button type="button" id="rvPrev"
-                            aria-label="Previous reviews"><?= icon('left') ?></button><button type="button" id="rvNext"
-                            aria-label="Next reviews"><?= icon('arrow') ?></button></div>
-                    <?php endif; ?>
-                </div>
                 <?php else: ?>
-                <div class="rv-empty reveal">
-                    <h3>Your feedback helps the next buyer decide</h3>
-                    <p>If we have supplied your shipment, a short Google review about quality, packing and communication
-                        goes a long way.</p>
-                </div>
+                    <div class="rv-empty reveal">
+                        <h3>Your feedback helps the next buyer decide</h3>
+                        <p>If we have supplied your shipment, a short Google review about quality, packing and communication
+                            goes a long way.</p>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
     </section>
 
     <!-- ============ BLOG ============ -->
-    <?php $first = $blogs[0] ?? null; $rest = array_slice($blogs, 1); ?>
+    <?php $first = $blogs[0] ?? null;
+    $rest = array_slice($blogs, 1); ?>
     <section class="section blog" id="blog">
         <div class="container">
             <header class="sec-head reveal">
@@ -342,45 +344,45 @@ require __DIR__ . '/includes/header.php';
                     <p class="sec-sub">Practical notes on sourcing, grading, packing and shipping Indian commodities.
                     </p>
                 </div>
-                <a class="link-arrow" href="<?= e(url('blog.php')) ?>">Read all articles<?= icon('arrow') ?></a>
+                <a class="link-arrow" href="<?= e(url('blog')) ?>">Read all articles<?= icon('arrow') ?></a>
             </header>
             <?php if ($first): ?>
-            <div class="blog-grid<?= $rest ? '' : ' blog-grid--one' ?>">
-                <a class="post post--lead reveal" href="<?= e(url($first['url'])) ?>">
-                    <span class="post-media"><?php if ($first['img']): ?><img src="<?= e($first['img']) ?>"
-                            alt="<?= e($first['title']) ?>" loading="lazy"><?php else: ?><span
-                            class="ph ph-spice"><?= icon('spice', 'ph-ico') ?></span><?php endif; ?></span>
-                    <span class="post-body">
-                        <span class="post-meta"><?= e($first['date']) ?>, <?= (int)$first['mins'] ?> min read</span>
-                        <strong><?= e($first['title']) ?></strong>
-                        <span class="post-text"><?= e($first['text']) ?></span>
-                        <span class="link-arrow">Read article<?= icon('arrow') ?></span>
-                    </span>
-                </a>
-                <?php if ($rest): ?>
-                <div class="post-list">
-                    <?php foreach ($rest as $b): ?>
-                    <a class="post post--row reveal" href="<?= e(url($b['url'])) ?>">
-                        <span class="post-media"><?php if ($b['img']): ?><img src="<?= e($b['img']) ?>"
-                                alt="<?= e($b['title']) ?>" loading="lazy"><?php else: ?><span
-                                class="ph ph-spice"><?= icon('spice', 'ph-ico') ?></span><?php endif; ?></span>
+                <div class="blog-grid<?= $rest ? '' : ' blog-grid--one' ?>">
+                    <a class="post post--lead reveal" href="<?= e(url($first['url'])) ?>">
+                        <span class="post-media"><?php if ($first['img']): ?><img src="<?= e($first['img']) ?>"
+                                    alt="<?= e($first['title']) ?>" loading="lazy"><?php else: ?><span
+                                    class="ph ph-spice"><?= icon('spice', 'ph-ico') ?></span><?php endif; ?></span>
                         <span class="post-body">
-                            <span class="post-meta"><?= e($b['date']) ?>, <?= (int)$b['mins'] ?> min read</span>
-                            <strong><?= e($b['title']) ?></strong>
-                            <span class="post-text"><?= e($b['text']) ?></span>
+                            <span class="post-meta"><?= e($first['date']) ?>, <?= (int)$first['mins'] ?> min read</span>
+                            <strong><?= e($first['title']) ?></strong>
+                            <span class="post-text"><?= e($first['text']) ?></span>
+                            <span class="link-arrow">Read article<?= icon('arrow') ?></span>
                         </span>
                     </a>
-                    <?php endforeach; ?>
+                    <?php if ($rest): ?>
+                        <div class="post-list">
+                            <?php foreach ($rest as $b): ?>
+                                <a class="post post--row reveal" href="<?= e(url($b['url'])) ?>">
+                                    <span class="post-media"><?php if ($b['img']): ?><img src="<?= e($b['img']) ?>"
+                                                alt="<?= e($b['title']) ?>" loading="lazy"><?php else: ?><span
+                                                class="ph ph-spice"><?= icon('spice', 'ph-ico') ?></span><?php endif; ?></span>
+                                    <span class="post-body">
+                                        <span class="post-meta"><?= e($b['date']) ?>, <?= (int)$b['mins'] ?> min read</span>
+                                        <strong><?= e($b['title']) ?></strong>
+                                        <span class="post-text"><?= e($b['text']) ?></span>
+                                    </span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
-                <?php endif; ?>
-            </div>
             <?php else: ?>
-            <div class="empty reveal">
-                <h3>Articles are on the way</h3>
-                <p>We are preparing guides on sourcing, grading and packing. Meanwhile, you are welcome to ask us
-                    anything directly.</p>
-                <div class="empty-actions"><a class="btn btn-brand" href="#inquiry">Ask a question</a></div>
-            </div>
+                <div class="empty reveal">
+                    <h3>Articles are on the way</h3>
+                    <p>We are preparing guides on sourcing, grading and packing. Meanwhile, you are welcome to ask us
+                        anything directly.</p>
+                    <div class="empty-actions"><a class="btn btn-brand" href="#inquiry">Ask a question</a></div>
+                </div>
             <?php endif; ?>
         </div>
     </section>
@@ -395,22 +397,22 @@ require __DIR__ . '/includes/header.php';
                 </div>
             </header>
             <?php if ($gallery): ?>
-            <div class="g-grid">
-                <?php foreach ($gallery as $g): ?>
-                <a class="g-item reveal" href="<?= e($g['src']) ?>" data-lightbox="<?= e($g['alt']) ?>">
-                    <img src="<?= e($g['src']) ?>" alt="<?= e($g['alt']) ?>" loading="lazy">
-                    <span><?= e($g['alt']) ?></span>
-                </a>
-                <?php endforeach; ?>
-            </div>
+                <div class="g-grid">
+                    <?php foreach ($gallery as $g): ?>
+                        <a class="g-item reveal" href="<?= e($g['src']) ?>" data-lightbox="<?= e($g['alt']) ?>">
+                            <img src="<?= e($g['src']) ?>" alt="<?= e($g['alt']) ?>" loading="lazy">
+                            <span><?= e($g['alt']) ?></span>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
             <?php else: ?>
-            <div class="empty reveal">
-                <h3>Our gallery is being updated</h3>
-                <p>Photos of our produce and packing will appear here. In the meantime, browse the full product range.
-                </p>
-                <div class="empty-actions"><a class="btn btn-brand" href="<?= e(url('products.php')) ?>">View
-                        products</a></div>
-            </div>
+                <div class="empty reveal">
+                    <h3>Our gallery is being updated</h3>
+                    <p>Photos of our produce and packing will appear here. In the meantime, browse the full product range.
+                    </p>
+                    <div class="empty-actions"><a class="btn btn-brand" href="<?= e(url('products')) ?>">View
+                            products</a></div>
+                </div>
             <?php endif; ?>
         </div>
     </section>

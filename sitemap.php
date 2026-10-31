@@ -1,77 +1,71 @@
 <?php
-header("Content-Type: application/xml; charset=utf-8");
-include 'config/connect.php';
+/**
+ * sitemap.php  -  XML sitemap built from the database.
+ * It is served as  /sitemap.xml  (see .htaccess). New products, categories and blog posts
+ * appear automatically; nothing has to be edited when content is added in the admin panel.
+ *
+ * URLs listed:   /   /about   /products   /blog   /contact
+ *                /category/{slug}   /product/{slug}   /blog/{slug}
+ * The domain comes from $site in config/connect.php.
+ */
+ob_start();
+require_once __DIR__ . '/config/connect.php';          // $conn and $site
+require_once __DIR__ . '/includes/content.php';        // static_catalogue(): used only if the products table is empty
+ini_set('display_errors', '0');                        // a PHP notice must never end up inside the XML
+mysqli_report(MYSQLI_REPORT_OFF);
+ob_end_clean();
 
-// config/connect.php se global $site variable utha liya
-global $site;
-$baseUrl = !empty($site) ? $site : "https://royalblue-gazelle-538620.hostingersite.com/";
+$base = rtrim($site, '/') . '/';
 
-echo '<?xml version="1.0" encoding="UTF-8"?>';
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+function sm_loc(string $path): string {
+    global $base;
+    return $base . implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
+}
+function sm_x($s): string { return htmlspecialchars((string)$s, ENT_XML1 | ENT_QUOTES, 'UTF-8'); }
+function sm_rows(string $sql): array {
+    global $conn;
+    $r = $conn->query($sql);
+    return $r ? $r->fetch_all(MYSQLI_ASSOC) : [];
+}
+function sm_date($v): string { $t = strtotime((string)$v); return $t ? date('c', $t) : ''; }
 
-// 1. Static Pages
-$staticPages = [
-    ["url" => "", "priority" => "1.0", "changefreq" => "daily"],
-    ["url" => "about.php", "priority" => "0.8", "changefreq" => "monthly"],
-    ["url" => "products.php", "priority" => "0.9", "changefreq" => "daily"],
-    ["url" => "blog.php", "priority" => "0.8", "changefreq" => "weekly"],
-    ["url" => "contact.php", "priority" => "0.7", "changefreq" => "monthly"],
-    ["url" => "terms-condition.php", "priority" => "0.3", "changefreq" => "yearly"],
-    ["url" => "privacy-policy.php", "priority" => "0.3", "changefreq" => "yearly"],
-    ["url" => "shipping-return.php", "priority" => "0.3", "changefreq" => "yearly"],
-    ["url" => "refund-policy.php", "priority" => "0.3", "changefreq" => "yearly"]
-];
+$urls = [];   // each: [loc, lastmod, changefreq, priority]
 
-foreach ($staticPages as $page) {
-    echo '<url>';
-    echo '<loc>' . $baseUrl . $page['url'] . '</loc>';
-    echo '<changefreq>' . $page['changefreq'] . '</changefreq>';
-    echo '<priority>' . $page['priority'] . '</priority>';
-    echo '</url>';
+/* ---------- data ---------- */
+$blogs = sm_rows("SELECT slug, created_at FROM blogs WHERE status = 1 AND slug <> '' ORDER BY created_at DESC, blog_id DESC");
+$prods = sm_rows("SELECT slug_url FROM products WHERE status = 1 AND (is_disabled = 0 OR is_disabled IS NULL) AND slug_url <> '' ORDER BY id ASC");
+$cats  = sm_rows("SELECT c.slug_url FROM categories c WHERE c.status = 1 AND c.slug_url <> ''
+                  AND EXISTS (SELECT 1 FROM products p WHERE p.pro_cate = c.cate_id AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL))
+                  ORDER BY c.id ASC");
+if (!$prods) {                                         // site is running on the built-in catalogue
+    $cats = [];
+    foreach (static_catalogue() as $slug => $x) { $prods[] = ['slug_url' => $slug]; $cats[$x['cat_slug']] = ['slug_url' => $x['cat_slug']]; }
 }
 
-if (isset($conn)) {
-    // 2. Dynamic Categories
-    $catQuery = mysqli_query($conn, "SELECT cate_id, slug_url FROM categories WHERE status = 1");
-    if ($catQuery && mysqli_num_rows($catQuery) > 0) {
-        while ($row = mysqli_fetch_assoc($catQuery)) {
-            $catVal = !empty($row['slug_url']) ? $row['slug_url'] : $row['cate_id'];
-            echo '<url>';
-            echo '<loc>' . $baseUrl . 'products.php?category=' . urlencode($catVal) . '</loc>';
-            echo '<changefreq>weekly</changefreq>';
-            echo '<priority>0.8</priority>';
-            echo '</url>';
-        }
-    }
+$latest_post = 0;
+foreach ($blogs as $b) { $latest_post = max($latest_post, (int)strtotime((string)$b['created_at'])); }
 
-    // 3. Dynamic Products
-    $prodQuery = mysqli_query($conn, "SELECT id, slug_url FROM products WHERE status = 1");
-    if ($prodQuery && mysqli_num_rows($prodQuery) > 0) {
-        while ($row = mysqli_fetch_assoc($prodQuery)) {
-            $prodVal = !empty($row['slug_url']) ? $row['slug_url'] : $row['id'];
-            echo '<url>';
-            // Note: product details mein humne id ya slug jo update kiya tha uske hisaab se yahan parameter match kar lein
-            echo '<loc>' . $baseUrl . 'product-details.php?id=' . $prodVal . '</loc>';
-            echo '<changefreq>weekly</changefreq>';
-            echo '<priority>0.8</priority>';
-            echo '</url>';
-        }
-    }
-
-    // 4. Dynamic Blogs
-    $blogQuery = mysqli_query($conn, "SELECT slug FROM blogs WHERE status = 1");
-    if ($blogQuery && mysqli_num_rows($blogQuery) > 0) {
-        while ($row = mysqli_fetch_assoc($blogQuery)) {
-            if (!empty($row['slug'])) {
-                echo '<url>';
-                echo '<loc>' . $baseUrl . 'blog-details.php?slug=' . htmlspecialchars($row['slug']) . '</loc>';
-                echo '<changefreq>weekly</changefreq>';
-                echo '<priority>0.7</priority>';
-                echo '</url>';
-            }
-        }
-    }
+/* ---------- main pages ---------- */
+$pages = [['', 'index.php', 'weekly', '1.0'], ['about', 'about.php', 'monthly', '0.8'], ['products', 'products.php', 'weekly', '0.9'],
+          ['blog', 'blog.php', 'weekly', '0.7'], ['contact', 'contact.php', 'yearly', '0.7']];
+foreach ($pages as [$path, $file, $freq, $prio]) {
+    $mt = (int)@filemtime(__DIR__ . '/' . $file);
+    if ($path === '' || $path === 'blog') $mt = max($mt, $latest_post);
+    $urls[] = [sm_loc($path), $mt ? date('c', $mt) : '', $freq, $prio];
 }
+/* ---------- categories, products, blog posts (lastmod only where the database really has a date) ---------- */
+foreach ($cats  as $c) { $urls[] = [sm_loc('category/' . $c['slug_url']), '', 'weekly', '0.8']; }
+foreach ($prods as $p) { $urls[] = [sm_loc('product/'  . $p['slug_url']), '', 'monthly', '0.8']; }
+foreach ($blogs as $b) { $urls[] = [sm_loc('blog/'     . $b['slug']),     sm_date($b['created_at']), 'monthly', '0.6']; }
 
-echo '</urlset>';
-?>
+/* ---------- output ---------- */
+header('Content-Type: application/xml; charset=utf-8');
+header('Cache-Control: public, max-age=3600');
+echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+foreach (array_slice($urls, 0, 50000) as $u) {
+    echo "  <url>\n    <loc>" . sm_x($u[0]) . "</loc>\n";
+    if ($u[1] !== '') echo '    <lastmod>' . sm_x($u[1]) . "</lastmod>\n";
+    echo '    <changefreq>' . $u[2] . "</changefreq>\n    <priority>" . $u[3] . "</priority>\n  </url>\n";
+}
+echo "</urlset>\n";
