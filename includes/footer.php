@@ -73,6 +73,12 @@ $f_cats = array_slice(get_categories(), 0, 6);
 <?php foreach ($extra_js as $jf): ?><script
     src="<?= e(url('/assets/js/' . $jf)) ?>?v=<?= (int)@filemtime(ROOT_PATH . '/assets/js/' . $jf) ?>" defer></script>
 <?php endforeach; ?>
+<?php if (!empty($local) && !empty($GLOBALS['bt_db_errors'])): ?>
+<!-- DATABASE ERRORS (shown only on localhost):
+<?= str_replace('--', '- -', implode("\n", array_unique($GLOBALS['bt_db_errors']))) ?>
+
+-->
+<?php endif; ?>
 </body>
 
 </html>

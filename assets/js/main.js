@@ -6,8 +6,9 @@
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- sticky header + back-to-top ---------- */
-  const header = $('#siteHeader'), toTop = $('#toTop');
+  const header = $('#siteHeader'), toTop = $('#toTop'), heroEl = $('.hero');
   const onScroll = () => {
+    if (heroEl && !reduce && window.scrollY < 900) heroEl.style.setProperty('--py', (window.scrollY * 0.18).toFixed(1) + 'px');
     header && header.classList.toggle('is-stuck', window.scrollY > 40);
     toTop && toTop.classList.toggle('show', window.scrollY > 700);
   };

@@ -38,3 +38,28 @@
     map.forEach((_, s) => spy.observe(s));
   }
 })();
+
+/* article page: reading progress, table-of-contents highlight */
+(() => {
+  'use strict';
+  const bar = document.getElementById('readProgress'), body = document.getElementById('articleBody');
+  if (bar && body) {
+    const upd = () => {
+      const r = body.getBoundingClientRect(), total = r.height - window.innerHeight * 0.6;
+      const p = Math.max(0, Math.min(1, (-r.top + window.innerHeight * 0.2) / Math.max(total, 1)));
+      bar.style.transform = 'scaleX(' + p.toFixed(3) + ')';
+    };
+    window.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); upd();
+  }
+  const links = Array.from(document.querySelectorAll('.toc a[href^="#"]'));
+  if (links.length && 'IntersectionObserver' in window) {
+    const map = new Map();
+    links.forEach(l => { const h = document.getElementById(l.getAttribute('href').slice(1)); if (h) map.set(h, l); });
+    const spy = new IntersectionObserver(es => es.forEach(en => {
+      if (!en.isIntersecting) return;
+      links.forEach(l => l.classList.remove('active'));
+      map.get(en.target).classList.add('active');
+    }), { rootMargin: '-15% 0px -75% 0px' });
+    map.forEach((_, h) => spy.observe(h));
+  }
+})();

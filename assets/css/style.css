@@ -1698,7 +1698,7 @@ button {
 
 /* ---------- inquiry ---------- */
 .inquiry {
-  background: var(--bg)
+  background: #fff
 }
 
 .inq-grid {
@@ -2263,5 +2263,262 @@ button {
     width: 50px;
     height: 50px;
     right: 14px
+  }
+}
+
+/* =========================================================
+   Enhancements (design pass 3)
+   ========================================================= */
+.btn-gold {
+  background: linear-gradient(135deg, var(--accent-light), var(--accent) 60%, var(--accent-dark));
+  color: var(--brand-900)
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, .38) 50%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform .7s var(--ease);
+  pointer-events: none
+}
+
+.btn:hover::after {
+  transform: translateX(120%)
+}
+
+/* small hexagon (same shape as the logo mark) above every section title */
+.section .sec-title::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 20px;
+  margin-bottom: 1rem;
+  background: var(--accent);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)
+}
+
+/* hero: parallax + scroll cue */
+.hero-bg {
+  background-position: center calc(50% + var(--py, 0px))
+}
+
+.hero-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 98px;
+  z-index: 5;
+  width: 26px;
+  height: 42px;
+  border: 2px solid rgba(255, 255, 255, .55);
+  border-radius: 14px;
+  transform: translateX(-50%);
+  transition: border-color .25s
+}
+
+.hero-cue:hover {
+  border-color: var(--accent)
+}
+
+.hero-cue span {
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  width: 4px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: wheel 1.8s ease-in-out infinite
+}
+
+@keyframes wheel {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0)
+  }
+
+  30% {
+    opacity: 1
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 14px)
+  }
+}
+
+/* scrolling strip under the hero */
+.marquee {
+  margin-top: 2.6rem;
+  overflow: hidden;
+  background: var(--brand-50);
+  border-block: 1px solid var(--line);
+  padding: 1.05rem 0
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marq 46s linear infinite
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused
+}
+
+.marquee span {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-right: 1.5rem;
+  white-space: nowrap;
+  font: 600 1.08rem/1 var(--f-display);
+  color: var(--brand-700)
+}
+
+.marquee span::after {
+  content: "";
+  width: 9px;
+  height: 10px;
+  background: var(--accent);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)
+}
+
+@keyframes marq {
+  to {
+    transform: translateX(-50%)
+  }
+}
+
+/* richer cards */
+.pcard {
+  position: relative
+}
+
+.pcard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  z-index: 3;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .45s var(--ease)
+}
+
+.pcard:hover::before {
+  transform: scaleX(1)
+}
+
+.cat-info strong {
+  position: relative;
+  display: inline-block
+}
+
+.cat-info strong::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform .35s var(--ease)
+}
+
+.cat-tile:hover .cat-info strong::after {
+  transform: scaleX(1)
+}
+
+/* reviews */
+.rv-card {
+  position: relative;
+  overflow: hidden
+}
+
+.rv-card::before {
+  content: "\201C";
+  position: absolute;
+  right: 1.1rem;
+  top: -.2rem;
+  font: 700 6rem/1 var(--f-display);
+  color: hsl(var(--ah) var(--as) 52%/.2);
+  pointer-events: none
+}
+
+.g-ico--star {
+  color: #fbbc04
+}
+
+/* section rhythm */
+.blog {
+  background: #fff
+}
+
+.post {
+  border: 1px solid var(--line)
+}
+
+.gallery {
+  background: var(--bg)
+}
+
+.g-item {
+  box-shadow: 0 14px 30px -24px hsl(var(--h) 60% 12%/.6)
+}
+
+/* footer decoration */
+.site-footer {
+  position: relative;
+  overflow: hidden
+}
+
+.site-footer::before {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -90px;
+  width: 360px;
+  height: 470px;
+  border: 2px solid hsl(var(--ah) var(--as) 52%/.14);
+  border-radius: 50% 50% 14px 14px / 40% 40% 14px 14px;
+  pointer-events: none
+}
+
+.site-footer::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent 60%)
+}
+
+.ft-grid,
+.ft-reg,
+.ft-bottom {
+  position: relative
+}
+
+@media (max-width:991px) {
+  .hero-cue {
+    display: none
+  }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .marquee-track {
+    animation: none
+  }
+
+  .hero-cue span {
+    animation: none
   }
 }

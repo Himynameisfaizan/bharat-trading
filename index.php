@@ -12,13 +12,17 @@ $blogs    = get_blogs(3);
 $gallery  = get_gallery(9);
 
 $product_total = count_products();
-$has_blog    = !empty($blogs);
-$has_gallery = !empty($gallery);
+$has_blog    = true;     // sections are always shown; they fill from the database
+$has_gallery = true;
 
 $rated = array_column($reviews, 'rating');
 $avg   = $rated ? round(array_sum($rated) / count($rated), 1) : 0;
 $review_url = GOOGLE_REVIEW_URL !== '' ? GOOGLE_REVIEW_URL : 'https://www.google.com/search?q=' . rawurlencode('Bharat Trading Nashik reviews');
 $prod_cats  = array_values(array_unique(array_column($products, 'cat')));
+
+// words for the scrolling strip under the hero
+$marquee = array_slice(array_column(get_catalogue(), 'name'), 0, 10);
+array_push($marquee, 'APEDA RCMC registered', 'IEC ' . COMPANY['iec'], 'Customised export packing', 'Quality inspection as agreed');
 
 require __DIR__ . '/includes/header.php';
 ?>
@@ -79,6 +83,8 @@ require __DIR__ . '/includes/header.php';
             </div>
         </aside>
 
+        <a class="hero-cue" href="#about" aria-label="Scroll to the next section"><span></span></a>
+
         <div class="hero-ui">
             <div class="container hero-ui-in">
                 <div class="hero-count"><b id="heroCur">01</b><span>/ <?= sprintf('%02d', count($slides)) ?></span>
@@ -112,6 +118,12 @@ require __DIR__ . '/includes/header.php';
             <div class="trust-item"><?= icon('search') ?><div><b>Quality inspection</b><span>Arranged as mutually
                         agreed</span></div>
             </div>
+        </div>
+    </div>
+
+    <div class="marquee" aria-hidden="true">
+        <div class="marquee-track">
+            <?php for ($rep = 0; $rep < 2; $rep++): foreach ($marquee as $mq): ?><span><?= e($mq) ?></span><?php endforeach; endfor; ?>
         </div>
     </div>
 
@@ -232,6 +244,27 @@ require __DIR__ . '/includes/header.php';
         </div>
     </section>
 
+    <!-- ============ HOW WE WORK ============ -->
+    <section class="section section--tint process-home">
+        <div class="container">
+            <header class="sec-head reveal">
+                <div>
+                    <h2 class="sec-title">How an order works</h2>
+                    <p class="sec-sub">From first message to shipment, each step is agreed with you in advance.</p>
+                </div>
+                <a class="link-arrow" href="<?= e(url('about.php')) ?>">More about us<?= icon('arrow') ?></a>
+            </header>
+            <ol class="steps steps--light">
+                <?php foreach (process_steps() as $i => $st): ?>
+                <li class="step reveal"><span class="step-n"><?= sprintf('%02d', $i + 1) ?></span>
+                    <h3><?= e($st[0]) ?></h3>
+                    <p><?= e($st[1]) ?></p>
+                </li>
+                <?php endforeach; ?>
+            </ol>
+        </div>
+    </section>
+
     <!-- ============ REVIEWS ============ -->
     <section class="section reviews" id="reviews">
         <div class="container">
@@ -244,7 +277,9 @@ require __DIR__ . '/includes/header.php';
             </header>
             <div class="rv-wrap">
                 <div class="rv-summary reveal">
-                    <div class="rv-g"><?= icon('g', 'g-ico') ?><span>Reviews</span></div>
+                    <div class="rv-g">
+                        <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><?= icon('g', 'g-ico') ?><span>Reviews</span><?php else: ?><?= icon('star', 'g-ico g-ico--star') ?><span>Client
+                            reviews</span><?php endif; ?></div>
                     <?php if ($reviews): ?>
                     <div class="rv-score"><b><?= number_format($avg, 1) ?></b><?= stars((int)round($avg)) ?></div>
                     <p>Average from <?= count($reviews) ?> <?= count($reviews) === 1 ? 'review' : 'reviews' ?></p>
@@ -252,8 +287,9 @@ require __DIR__ . '/includes/header.php';
                     <div class="rv-score rv-score--empty"><?= stars(5) ?></div>
                     <p>Worked with Bharat Trading? Tell other buyers about it.</p>
                     <?php endif; ?>
-                    <a class="btn btn-gold btn-sm" href="<?= e($review_url) ?>" target="_blank" rel="noopener">Write a
-                        review</a>
+                    <?php if (REVIEWS_ARE_FROM_GOOGLE): ?><a class="btn btn-gold btn-sm" href="<?= e($review_url) ?>"
+                        target="_blank" rel="noopener">Write a review</a><?php else: ?><a class="btn btn-gold btn-sm"
+                        href="#inquiry">Work with us</a><?php endif; ?>
                 </div>
 
                 <?php if ($reviews): ?>
@@ -297,7 +333,7 @@ require __DIR__ . '/includes/header.php';
     </section>
 
     <!-- ============ BLOG ============ -->
-    <?php if ($has_blog): $first = $blogs[0]; $rest = array_slice($blogs, 1); ?>
+    <?php $first = $blogs[0] ?? null; $rest = array_slice($blogs, 1); ?>
     <section class="section blog" id="blog">
         <div class="container">
             <header class="sec-head reveal">
@@ -308,6 +344,7 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <a class="link-arrow" href="<?= e(url('blog.php')) ?>">Read all articles<?= icon('arrow') ?></a>
             </header>
+            <?php if ($first): ?>
             <div class="blog-grid<?= $rest ? '' : ' blog-grid--one' ?>">
                 <a class="post post--lead reveal" href="<?= e(url($first['url'])) ?>">
                     <span class="post-media"><?php if ($first['img']): ?><img src="<?= e($first['img']) ?>"
@@ -337,12 +374,18 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <?php endif; ?>
             </div>
+            <?php else: ?>
+            <div class="empty reveal">
+                <h3>Articles are on the way</h3>
+                <p>We are preparing guides on sourcing, grading and packing. Meanwhile, you are welcome to ask us
+                    anything directly.</p>
+                <div class="empty-actions"><a class="btn btn-brand" href="#inquiry">Ask a question</a></div>
+            </div>
+            <?php endif; ?>
         </div>
     </section>
-    <?php endif; ?>
 
     <!-- ============ GALLERY ============ -->
-    <?php if ($has_gallery): ?>
     <section class="section gallery" id="gallery">
         <div class="container">
             <header class="sec-head reveal">
@@ -351,6 +394,7 @@ require __DIR__ . '/includes/header.php';
                     <p class="sec-sub">A look at the produce and packing we work with.</p>
                 </div>
             </header>
+            <?php if ($gallery): ?>
             <div class="g-grid">
                 <?php foreach ($gallery as $g): ?>
                 <a class="g-item reveal" href="<?= e($g['src']) ?>" data-lightbox="<?= e($g['alt']) ?>">
@@ -359,9 +403,17 @@ require __DIR__ . '/includes/header.php';
                 </a>
                 <?php endforeach; ?>
             </div>
+            <?php else: ?>
+            <div class="empty reveal">
+                <h3>Our gallery is being updated</h3>
+                <p>Photos of our produce and packing will appear here. In the meantime, browse the full product range.
+                </p>
+                <div class="empty-actions"><a class="btn btn-brand" href="<?= e(url('products.php')) ?>">View
+                        products</a></div>
+            </div>
+            <?php endif; ?>
         </div>
     </section>
-    <?php endif; ?>
 
     <!-- ============ INQUIRY ============ -->
     <section class="section inquiry" id="inquiry">

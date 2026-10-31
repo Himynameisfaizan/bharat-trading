@@ -2,7 +2,7 @@
 /**
  * includes/header.php
  * Optional variables a page can set BEFORE including this file:
- *   $page_title, $page_desc, $page_keys, $active_key (nav item to highlight), $has_inquiry, $extra_css, $has_blog, $has_gallery
+ *   $page_title, $page_desc, $page_keys, $active_key (nav item to highlight), $has_inquiry, $extra_css, $extra_head, $canonical
  */
 require_once __DIR__ . '/functions.php';
 
@@ -11,23 +11,21 @@ $current     = basename((string)parse_url($_SERVER['SCRIPT_NAME'] ?? 'index.php'
 $on_home     = ($current === 'index.php');
 $active_key  = $active_key ?? ($on_home ? 'home' : '');
 $has_inquiry = $has_inquiry ?? $on_home;                    // does this page have an element with id="inquiry"?
-$extra_css   = $extra_css ?? [];                            // e.g. ['pages.css'] on inner pages
+$extra_css   = array_values(array_unique(array_merge(['pages.css'], $extra_css ?? [])));   // pages.css is used on every page
 if (!isset($page_title)) {
     $m = page_meta($current);
     $page_title = $m['title']; $page_desc = $page_desc ?? $m['desc']; $page_keys = $page_keys ?? $m['keywords'];
 }
 $page_desc = $page_desc ?? ''; $page_keys = $page_keys ?? '';
-$has_blog    = $has_blog    ?? !empty(get_blogs(1));
-$has_gallery = $has_gallery ?? !empty(get_gallery(1));
 $favicon     = get_logo('favicon');
 $canonical   = $canonical ?? url($on_home ? '' : $current);
 $css_file    = '/assets/css/style.css';
+
 // label, target, key. On the home page links to home sections become plain #anchors.
 $nav_def = [['Home', 'index.php', 'home'], ['About Us', 'about.php', 'about'], ['Products', 'products.php', 'products'],
-            ['Reviews', 'index.php#reviews', 'reviews'], ['Blog', 'index.php#blog', 'blog'], ['Gallery', 'index.php#gallery', 'gallery'], ['Contact', 'contact.php', 'contact']];
+            ['Reviews', 'index.php#reviews', 'reviews'], ['Blog', 'blog.php', 'blog'], ['Gallery', 'index.php#gallery', 'gallery'], ['Contact', 'contact.php', 'contact']];
 $nav = [];
 foreach ($nav_def as $n) {
-    if (($n[2] === 'blog' && !$has_blog) || ($n[2] === 'gallery' && !$has_gallery)) continue;
     $href = ($on_home && strpos($n[1], 'index.php') === 0) ? (substr($n[1], 9) ?: '#top') : url($n[1]);
     $nav[] = [$n[0], $href, $n[2]];
 }

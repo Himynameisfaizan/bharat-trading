@@ -6,16 +6,16 @@
  */
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 define('ROOT_PATH', dirname(__DIR__));
-require_once ROOT_PATH . '/config/connect.php';          // provides $conn and $site
+require_once ROOT_PATH . '/config/connect.php';          // provides $conn and $site ($local too)
 require_once __DIR__ . '/content.php';                 // static genuine content (defaults)
 
 /* ================= SETTINGS (edit here) ================= */
-const STALE_GUARD             = true;                    // hide leftover data from the previous website
+const STALE_GUARD             = false;                   // true = hide rows that mention STALE_MARKERS (use before launch to catch leftovers)
 const STALE_MARKERS           = ['bhagirath', 'azadpur']; // words that identify that old data
 const BANNER_ACTIVE_STATUS    = 0;                       // value of banners.status that means "show"
-const REVIEWS_ARE_FROM_GOOGLE = true;                    // set false if admin reviews are not real Google reviews
+const REVIEWS_ARE_FROM_GOOGLE = false;                   // set true ONLY when the reviews in admin are genuine Google reviews
 const GOOGLE_REVIEW_URL       = '';                      // paste your Google "write a review" link
-const UPLOAD_BASES            = ['', 'uploads/', 'admin/uploads/', 'admin/']; // where admin uploads may live
+const OLD_SITE_HOSTS          = ['bhagirathenterprises.co.in', 'www.bhagirathenterprises.co.in']; // links to these hosts inside content are pointed at this site
 
 const COMPANY = [
     'name'       => 'Bharat Trading',
@@ -57,6 +57,7 @@ function db_all(string $sql, string $types = '', array $params = []): array {
         return $rows;
     } catch (Throwable $ex) {
         error_log('[db_all] ' . $ex->getMessage());
+        $GLOBALS['bt_db_errors'][] = $ex->getMessage() . '  |  ' . substr(preg_replace('/\s+/', ' ', $sql), 0, 140);
         return [];
     }
 }
@@ -115,21 +116,68 @@ function phone_display(string $p): string {
 }
 
 /* ================= IMAGES & LOGO ================= */
-/** Finds an uploaded file in common admin folders. Returns URL or '' if the file does not exist. */
-function find_img($file, array $subs = []): string {
+function enc_path(string $p): string { return implode('/', array_map('rawurlencode', explode('/', $p))); }
+
+/** Settings from config/paths.php */
+function img_cfg(): array {
+    static $c = null;
+    if ($c === null) {
+        $f = ROOT_PATH . '/config/paths.php';
+        $c = is_file($f) ? (array)(require $f) : [];
+        $c += ['dirs' => [], 'search_roots' => ['uploads', 'admin/uploads', 'admin', 'logo', 'assets', 'images'], 'external' => []];
+    }
+    return $c;
+}
+
+/** file name => [url base ('' = this site), relative path], built by scanning the upload folders (cached 2 minutes). */
+function img_index(): array {
+    static $idx = null;
+    if ($idx !== null) return $idx;
+    $cache = sys_get_temp_dir() . '/bt_img_' . md5(ROOT_PATH) . '.json';
+    if (is_file($cache) && time() - (int)@filemtime($cache) < 120) {
+        $j = json_decode((string)@file_get_contents($cache), true);
+        if (is_array($j)) return $idx = $j;
+    }
+    $idx = []; $n = 0; $cfg = img_cfg();
+    $scan = function (string $abs, string $rel, string $base) use (&$idx, &$n) {
+        if (!is_dir($abs)) return;
+        try {
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($abs, FilesystemIterator::SKIP_DOTS));
+            foreach ($it as $f) {
+                if (++$n > 20000) return;
+                if (!$f->isFile() || !in_array(strtolower($f->getExtension()), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif'], true)) continue;
+                $key = strtolower($f->getFilename());
+                if (isset($idx[$key])) continue;
+                $sub = ltrim(str_replace('\\', '/', substr($f->getPathname(), strlen($abs))), '/');
+                $idx[$key] = [$base, trim($rel . '/' . $sub, '/')];
+            }
+        } catch (Throwable $e) { /* unreadable folder: ignore */ }
+    };
+    foreach ($cfg['search_roots'] as $root) { $scan(ROOT_PATH . '/' . trim($root, '/'), trim($root, '/'), ''); }
+    foreach ($cfg['external'] as $ext) { if (is_array($ext) && count($ext) === 2) $scan(rtrim($ext[0], '/\\'), '', $ext[1]); }
+    @file_put_contents($cache, json_encode($idx));
+    return $idx;
+}
+
+/**
+ * Turns a file name / path stored in the database into a working URL, or '' if the file cannot be found.
+ * $type is one of: logo banner about category product blog gallery testimonial certificate (see config/paths.php).
+ */
+function find_img($file, string $type = ''): string {
     $file = trim((string)$file);
     if ($file === '') return '';
     if (preg_match('~^(https?:)?//~i', $file)) return $file;
     $file = ltrim(str_replace('\\', '/', $file), '/');
-    $subs = array_merge([''], array_map(function ($s) { return trim($s, '/'); }, $subs));
-    foreach (UPLOAD_BASES as $b) {
-        foreach ($subs as $s) {
-            $p = $b . ($s !== '' ? $s . '/' : '') . $file;
-            if (is_file(ROOT_PATH . '/' . $p)) {
-                return url(implode('/', array_map('rawurlencode', explode('/', $p))));
-            }
+    $dirs = array_merge([''], img_cfg()['dirs'][$type] ?? []);
+    foreach ($dirs as $d) {
+        $d = trim($d, '/');
+        foreach (array_unique([$file, basename($file)]) as $nm) {
+            $p = ($d !== '' ? $d . '/' : '') . $nm;
+            if (is_file(ROOT_PATH . '/' . $p)) return url(enc_path($p));
         }
     }
+    $hit = img_index()[strtolower(basename($file))] ?? null;
+    if ($hit) return $hit[0] === '' ? url(enc_path($hit[1])) : rtrim($hit[0], '/') . '/' . enc_path($hit[1]);
     return '';
 }
 
@@ -137,7 +185,7 @@ function get_logo(string $loc): string {
     static $cache = [];
     if (!isset($cache[$loc])) {
         $r = db_all("SELECT logo_path FROM logos WHERE location=? AND is_active=1 ORDER BY id DESC LIMIT 1", 's', [$loc]);
-        $cache[$loc] = $r ? find_img($r[0]['logo_path'], ['logo', 'uploads/logo']) : '';
+        $cache[$loc] = $r ? find_img($r[0]['logo_path'], 'logo') : '';
     }
     return $cache[$loc];
 }
@@ -276,7 +324,7 @@ function get_banners(): array {
     $out = [];
     foreach ($rows as $r) {
         $out[] = [
-            'img'   => find_img($r['banner_path'], ['banners', 'uploads/banners']),
+            'img'   => find_img($r['banner_path'], 'banner'),
             'title' => trim($r['title'] ?? '') ?: 'Merchant exporter of Indian agricultural commodities',
             'desc'  => trim($r['description'] ?? ''),
             'link'  => trim($r['link_url'] ?? ''),
@@ -289,11 +337,16 @@ function get_about(): array {
     $t = ''; $p = [];
     $w = stale_where(['title', 'content'], $t, $p);
     $r = db_all("SELECT title, content, image_url FROM about_sections WHERE 1=1 $w ORDER BY section_order ASC, id ASC LIMIT 1", $t, $p)[0] ?? null;
+    if (!$r || trim(strip_tags($r['content'])) === '') {            // older admin table
+        $t = ''; $p = [];
+        $w = stale_where(['title', 'content'], $t, $p);
+        $r = db_all("SELECT title, content, image_url FROM about_us WHERE 1=1 $w ORDER BY id DESC LIMIT 1", $t, $p)[0] ?? null;
+    }
     if ($r && trim(strip_tags($r['content'])) !== '') {
         return [
             'title'   => $r['title'],
-            'content' => strip_tags($r['content'], '<p><br><strong><b><em><i><ul><ol><li><a>'),
-            'img'     => find_img($r['image_url'], ['about_us', 'uploads/about_us']),
+            'content' => safe_html($r['content']),
+            'img'     => find_img($r['image_url'], 'about'),
         ];
     }
     return [
@@ -318,7 +371,7 @@ function get_categories(): array {
         $out[] = [
             'name'  => $r['categories'],
             'slug'  => $slug,
-            'img'   => find_img($r['image'], ['categories', 'category', 'uploads/categories', 'uploads/category']),
+            'img'   => find_img($r['image'], 'category'),
             'url'   => 'products.php?category=' . rawurlencode($slug),
             'count' => (int)$r['total'],
             'icon'  => guess_group($r['categories']),
@@ -337,11 +390,10 @@ function get_categories(): array {
 }
 
 /** First usable image from a field that may hold one name or a comma separated list. */
-function first_img($field, array $subs): string {
-    foreach (explode(',', (string)$field) as $f) { $u = find_img(trim($f), $subs); if ($u) return $u; }
+function first_img($field, string $type): string {
+    foreach (explode(',', (string)$field) as $f) { $u = find_img(trim($f), $type); if ($u) return $u; }
     return '';
 }
-const PRODUCT_DIRS = ['products', 'product', 'uploads/products', 'uploads/product'];
 
 /** Every visible product (database first, built-in catalogue if the database has none). */
 function get_catalogue(): array {
@@ -361,7 +413,7 @@ function get_catalogue(): array {
             'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat,
             'cat_slug' => $r['cat_slug'] ?: slugify($cat),
             'desc' => excerpt($r['description'] ?: $r['short_desc'], 110),
-            'img'  => first_img($r['pro_img'], PRODUCT_DIRS),
+            'img'  => first_img($r['pro_img'], 'product'),
             'url'  => 'product-details.php?slug=' . rawurlencode($r['slug_url']),
             'group' => guess_group($r['pro_name']), 'static' => false,
         ];
@@ -392,30 +444,58 @@ function safe_html($html, string $allowed = '<p><br><strong><b><em><i><u><ul><ol
 }
 
 /** One product with everything the details page needs (database product or built-in one). */
+/** Pulls the first table (spec rows) and the "MOQ" line out of the product's short description. */
+function extract_spec(string $html): array {
+    $facts = []; $moq = '';
+    $clean = function ($x) { return trim(preg_replace('/^[\s\x{00A0}]+|[\s\x{00A0}]+$/u', '', html_entity_decode(strip_tags($x), ENT_QUOTES, 'UTF-8'))); };
+    if (preg_match('~<table\b.*?</table>~is', $html, $m) && preg_match_all('~<tr\b.*?</tr>~is', $m[0], $trs)) {
+        foreach ($trs[0] as $tr) {
+            if (preg_match_all('~<t[hd]\b[^>]*>(.*?)</t[hd]>~is', $tr, $c) && count($c[1]) >= 2) {
+                $k = $clean($c[1][0]); $v = $clean($c[1][1]);
+                if ($k !== '' && $v !== '') $facts[] = [$k, $v];
+            }
+        }
+        if ($facts) $html = preg_replace('~<table\b.*?</table>~is', '', $html, 1);
+    }
+    if (preg_match('~MOQ\s*:?\s*([^<\n\r]{2,60})~i', strip_tags($html), $mm)) $moq = $clean($mm[1]);
+    $html = preg_replace('~<h1\b.*?</h1>~is', '', $html, 1);                         // the "Buy ... at best price" title
+    $html = preg_replace('~<h[1-6][^>]*>[^<]*specification[^<]*</h[1-6]>~i', '', $html); // an orphan "Specification" heading
+    $html = preg_replace('~<p[^>]*>\s*MOQ\s*:?[^<]*</p>~i', '', $html);
+    return [$facts, trim($html), $moq];
+}
+
 function get_product_detail(string $slug): ?array {
     $slug = trim($slug);
     if ($slug === '') return null;
+    $sel = "SELECT p.*, c.categories AS cat, c.slug_url AS cat_slug FROM products p LEFT JOIN categories c ON c.cate_id = p.pro_cate
+            WHERE %s AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) %s LIMIT 1";
     $t = 's'; $p = [$slug];
     $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
-    $r = db_all("SELECT p.*, c.categories AS cat, c.slug_url AS cat_slug
-                 FROM products p LEFT JOIN categories c ON c.cate_id = p.pro_cate
-                 WHERE p.slug_url = ? AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL) $w LIMIT 1", $t, $p)[0] ?? null;
+    $r = db_all(sprintf($sel, 'p.slug_url = ?', $w), $t, $p)[0] ?? null;
+    if (!$r && ctype_digit($slug)) {                                  // old links use the numeric id, e.g. ?slug=283
+        $t = 'i'; $p = [(int)$slug];
+        $w = stale_where(['p.pro_name', 'p.short_desc', 'p.description', 'p.meta_title'], $t, $p);
+        $r = db_all(sprintf($sel, 'p.id = ?', $w), $t, $p)[0] ?? null;
+    }
     if ($r) {
         $imgs = [];
-        foreach (explode(',', (string)$r['pro_img']) as $f) { $u = find_img(trim($f), PRODUCT_DIRS); if ($u) $imgs[] = $u; }
+        foreach (explode(',', (string)$r['pro_img']) as $f) { $u = find_img(trim($f), 'product'); if ($u) $imgs[] = $u; }
         foreach (db_all("SELECT image_path FROM product_images WHERE product_id IN (?, ?) ORDER BY id ASC", 'ii', [(int)$r['id'], (int)$r['pro_id']]) as $x) {
-            $u = find_img($x['image_path'], PRODUCT_DIRS);
+            $u = find_img($x['image_path'], 'product');
             if ($u && !in_array($u, $imgs, true)) $imgs[] = $u;
         }
         $cat = $r['cat'] ?: 'Products';
         $facts = [['Product', $r['pro_name']], ['Category', $cat]];
         if (trim((string)$r['brand_name']) !== '') $facts[] = ['Brand', $r['brand_name']];
+        [$sf, $rest, $moq] = extract_spec((string)$r['short_desc']);
+        foreach (array_slice($sf, 0, 12) as $f) { $facts[] = $f; }
+        $facts[] = ['Minimum order', $moq !== '' ? $moq : 'As per customer requirement'];
         array_push($facts, ['Packing', 'Customised as per buyer requirement'], ['Inspection', 'Arranged as mutually agreed']);
         return [
             'name' => $r['pro_name'], 'slug' => $r['slug_url'], 'cat' => $cat, 'cat_slug' => $r['cat_slug'] ?: slugify($cat),
             'group' => guess_group($r['pro_name']), 'static' => false, 'images' => $imgs,
-            'summary' => excerpt($r['description'] ?: $r['short_desc'], 240),
-            'paras' => [], 'overview_html' => safe_html($r['description']), 'spec_html' => safe_html($r['short_desc']),
+            'summary' => excerpt($r['description'] ?: $rest, 240),
+            'paras' => [], 'overview_html' => rewrite_links(safe_html($r['description'])), 'spec_html' => rewrite_links(safe_html($rest)),
             'facts' => $facts, 'uses' => [], 'faqs' => product_faqs($r['pro_name']),
             'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
         ];
@@ -450,7 +530,7 @@ function get_about_sections(): array {
     $out = [];
     foreach ($rows as $r) {
         if (trim(strip_tags($r['content'])) === '') continue;
-        $out[] = ['title' => $r['title'], 'content' => safe_html($r['content']), 'img' => find_img($r['image_url'], ['about_us', 'uploads/about_us'])];
+        $out[] = ['title' => $r['title'], 'content' => safe_html($r['content']), 'img' => find_img($r['image_url'], 'about')];
     }
     return $out ?: [get_about()];
 }
@@ -458,7 +538,7 @@ function get_about_sections(): array {
 function get_certificates(): array {
     $out = [];
     foreach (db_all("SELECT title, image FROM certificates WHERE status = 1 ORDER BY cert_id DESC LIMIT 12") as $r) {
-        $src = find_img($r['image'], ['certificates', 'certificate', 'uploads/certificates', 'uploads/certificate']);
+        $src = find_img($r['image'], 'certificate');
         if ($src) $out[] = ['title' => $r['title'], 'src' => $src];
     }
     return $out;
@@ -472,7 +552,7 @@ function get_reviews(int $limit = 9): array {
     $out = [];
     foreach ($rows as $r) {
         $rt = (int)$r['rating'];
-        $img = (stripos((string)$r['image'], 'person') === 0) ? '' : find_img($r['image'], ['testimonials', 'testimonial', 'uploads/testimonials', 'uploads/testimonial']);
+        $img = (stripos((string)$r['image'], 'person') === 0) ? '' : find_img($r['image'], 'testimonial');
         $out[] = [
             'name'   => $r['name'],
             'role'   => trim($r['designation'] . ($r['client_company'] ? ', ' . $r['client_company'] : ''), ', '),
@@ -486,34 +566,90 @@ function get_reviews(int $limit = 9): array {
     return $out;
 }
 
-function get_blogs(int $limit = 3): array {
-    $t = ''; $p = [];
-    $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
-    $rows = db_all("SELECT title, slug, author, image, SUBSTRING(description,1,2500) AS body, CHAR_LENGTH(description) AS len, created_at
-                    FROM blogs WHERE status = 1 $w ORDER BY created_at DESC LIMIT " . (int)$limit, $t, $p);
-    $out = [];
-    foreach ($rows as $r) {
-        $out[] = [
-            'title'  => $r['title'],
-            'text'   => excerpt($r['body'], 150),
-            'img'    => find_img($r['image'], ['blogs', 'blog', 'uploads/blogs', 'uploads/blog']),
-            'url'    => 'blog-details.php?slug=' . rawurlencode($r['slug']),
-            'date'   => fmt_date($r['created_at']),
-            'author' => $r['author'] ?: 'Admin',
-            'mins'   => max(1, (int)round(((int)$r['len'] / 6) / 200)),
-        ];
-    }
-    return $out;
+function clean_author($a): string { $a = trim(explode('-', (string)$a)[0]); return $a !== '' ? $a : 'Admin'; }
+
+/** Points links that still use the old website address at this website, and opens other sites in a new tab. */
+function rewrite_links(string $html): string {
+    return preg_replace_callback('~href=(["\'])(.*?)\1~i', function ($m) {
+        $href = html_entity_decode($m[2]);
+        $host = parse_url($href, PHP_URL_HOST);
+        if (!$host) return $m[0];
+        if (in_array(strtolower($host), OLD_SITE_HOSTS, true)) {
+            $q = parse_url($href, PHP_URL_QUERY); $f = parse_url($href, PHP_URL_FRAGMENT);
+            $href = url((string)parse_url($href, PHP_URL_PATH)) . ($q ? '?' . $q : '') . ($f ? '#' . $f : '');
+            return 'href="' . e($href) . '"';
+        }
+        return 'href="' . e($href) . '" target="_blank" rel="noopener"';
+    }, $html);
 }
 
+function blog_card(array $r): array {
+    $desc = trim((string)$r['meta_desc']) !== '' ? $r['meta_desc'] : $r['body'];
+    return [
+        'title'  => $r['title'], 'slug' => $r['slug'],
+        'text'   => excerpt($desc, 165),
+        'img'    => find_img($r['image'], 'blog'),
+        'url'    => 'blog-details.php?slug=' . rawurlencode($r['slug']),
+        'date'   => fmt_date($r['created_at']),
+        'author' => clean_author($r['author']),
+        'mins'   => max(1, (int)round(((int)$r['len']) / 1000)),
+    ];
+}
+
+/** Blog posts for cards. $q searches title / keywords / description. */
+function get_blogs(int $limit = 3, int $offset = 0, string $q = '', string $exclude = ''): array {
+    $t = ''; $p = [];
+    $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
+    if ($q !== '')       { $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)"; $t .= 'sss'; array_push($p, "%$q%", "%$q%", "%$q%"); }
+    if ($exclude !== '') { $w .= " AND slug <> ?"; $t .= 's'; $p[] = $exclude; }
+    $rows = db_all("SELECT title, slug, author, image, meta_desc, SUBSTRING(description,1,1500) AS body, CHAR_LENGTH(description) AS len, created_at
+                    FROM blogs WHERE status = 1 $w ORDER BY created_at DESC, blog_id DESC LIMIT " . (int)$limit . " OFFSET " . (int)$offset, $t, $p);
+    return array_map('blog_card', $rows);
+}
+
+function count_blogs(string $q = ''): int {
+    $t = ''; $p = [];
+    $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
+    if ($q !== '') { $w .= " AND (title LIKE ? OR meta_key LIKE ? OR meta_desc LIKE ?)"; $t .= 'sss'; array_push($p, "%$q%", "%$q%", "%$q%"); }
+    return (int)(db_all("SELECT COUNT(*) AS n FROM blogs WHERE status = 1 $w", $t, $p)[0]['n'] ?? 0);
+}
+
+/** One full article. Adds ids to the h2 headings (for the table of contents) and wraps tables so they scroll on phones. */
+function get_blog(string $slug): ?array {
+    $t = 's'; $p = [trim($slug)];
+    $w = stale_where(['title', 'description', 'meta_title'], $t, $p);
+    $r = db_all("SELECT * FROM blogs WHERE slug = ? AND status = 1 $w LIMIT 1", $t, $p)[0] ?? null;
+    if (!$r || trim($slug) === '') return null;
+    $html = rewrite_links(safe_html($r['description']));
+    $toc = [];
+    $html = preg_replace_callback('~<h2\b[^>]*>(.*?)</h2>~is', function ($m) use (&$toc) {
+        $txt = trim(html_entity_decode(strip_tags($m[1]), ENT_QUOTES, 'UTF-8'));
+        if ($txt === '') return $m[0];
+        $id = 's' . (count($toc) + 1) . '-' . substr(slugify($txt), 0, 40);
+        $toc[] = [$id, $txt];
+        return '<h2 id="' . e($id) . '">' . $m[1] . '</h2>';
+    }, $html);
+    $html = preg_replace('~<table\b~i', '<div class="table-wrap"><table', $html);
+    $html = str_ireplace('</table>', '</table></div>', $html);
+    return [
+        'title' => $r['title'], 'slug' => $r['slug'], 'html' => $html, 'toc' => $toc,
+        'img' => find_img($r['image'], 'blog'), 'author' => clean_author($r['author']),
+        'date' => fmt_date($r['created_at']), 'iso' => date('c', (int)strtotime((string)$r['created_at'])),
+        'mins' => max(1, (int)round(mb_strlen((string)$r['description']) / 1000)),
+        'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
+    ];
+}
+
+/** Gallery table first; if it is empty, product and category photos are shown instead. */
 function get_gallery(int $limit = 9): array {
     $out = [];
     foreach (db_all("SELECT image_name, image_path FROM gallery ORDER BY ID DESC LIMIT " . (int)$limit) as $r) {
-        $src = find_img($r['image_path'], ['gallery', 'uploads/gallery']);
-        if ($src) $out[] = ['src' => $src, 'alt' => $r['image_name'] ?: 'Bharat Trading gallery'];
+        $src = find_img($r['image_path'], 'gallery');
+        if ($src) $out[] = ['src' => $src, 'alt' => $r['image_name'] ?: 'Gallery image'];
     }
-    if (!$out) {   // no gallery uploads yet: reuse product photos so the section is never empty
-        foreach (get_products(12) as $pr) { if ($pr['img']) $out[] = ['src' => $pr['img'], 'alt' => $pr['name']]; }
+    if (!$out) {
+        foreach (get_catalogue() as $pr)  { if ($pr['img']) $out[] = ['src' => $pr['img'], 'alt' => $pr['name']]; }
+        foreach (get_categories() as $c)  { if ($c['img'])  $out[] = ['src' => $c['img'],  'alt' => $c['name']]; }
     }
     return array_slice($out, 0, $limit);
 }
