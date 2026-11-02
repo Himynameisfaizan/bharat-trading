@@ -103,6 +103,14 @@ RewriteRule ^(page|locations)/?$           location.php                         
 
 RewriteRule ^(about|contact|products|blog|privacy-policy|terms-condition|refund-policy|shipping-return)/?$   $1.php   [L,QSA]
 
+
+# --- 1.7  404 PAGE: an address that is not a real file or folder and matched no rule above ---
+#          (missing images, CSS and similar files keep the plain server 404 so the site stays fast)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !\.(?:jpe?g|png|gif|webp|avif|svg|ico|css|js|map|woff2?|ttf|eot|otf|pdf|xml|txt|json|mp4|webm|zip|rar)$ [NC]
+RewriteRule ^ 404.php [L]
+
 </IfModule>
 
 
