@@ -1,94 +1,82 @@
 <?php
-include('config/connect.php');
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/custom-pages.php';
 
-$pageTitle = "Terms & Conditions | Bhagirath Enterprises";
-$meta_description = "Read the terms and conditions of Bhagirath Enterprises for purchasing spices, dry fruits, seeds, and kernels[cite: 25].";
-$meta_key = "terms and conditions, bhagirath enterprises, export terms";
+$contact = get_contact();
 
-include 'includes/header.php';
-include 'includes/breadcrumb.php';
-?>
+$m = page_meta('terms-condition.php', [
+    'title'    => 'Terms & Conditions | Bharat Trading, Nashik',
+    'desc'     => 'Terms that apply to enquiries, quotations and orders placed with Bharat Trading, merchant exporter of Indian onions, rice and spices.',
+    'keywords' => 'terms and conditions, Bharat Trading, export terms, FOB CIF, merchant exporter terms',
+]);
+$page_title = $m['title']; $page_desc = $m['desc']; $page_keys = $m['keywords'];
 
-<section class="py-5" style="background-color: #f8f9fa;">
-    <div class="container">
-        <div class="row g-5">
-            
-            <!-- LEFT COLUMN: Content -->
-            <div class="col-lg-8">
-                <div class="bg-white p-4 p-md-5 rounded shadow-sm border">
-                    <h1 class="mb-4" style="color: #2b5e2c; font-weight: 700;">Terms & Conditions</h1>
-                    <p class="text-muted mb-5"><strong>Last Updated:</strong> <?= date('F d, Y'); ?></p>
+$legal_key     = 'terms-condition';
+$legal_title   = 'Terms & Conditions';
+$legal_lead    = 'The ground rules for using this website and for doing business with Bharat Trading.';
+$legal_updated = date('F j, Y', (int)filemtime(__FILE__));
+$legal_glance  = [
+    'Prices are quoted per enquiry. An order is binding only when it is confirmed in writing.',
+    'Grade, size, packing and trade terms are agreed with you before each order.',
+    'Destination customs duties and taxes are the buyer\'s responsibility unless agreed otherwise.',
+    'Indian law applies to all dealings with us.',
+];
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">1. Introduction</h4>
-                    <p>Welcome to <strong>Bhagirath Enterprises</strong>[cite: 25]. By browsing our website and purchasing our agricultural commodities, spices, dry fruits, seeds, and kernels, you agree to abide by these Terms & Conditions[cite: 25].</p>
+$legal_sections = [
+    ['About these terms',
+        '<p>These terms apply to your use of this website and to enquiries, quotations and orders placed with <strong>' . e(COMPANY['legal']) . '</strong>, a proprietorship based in Nashik, Maharashtra, India. We are a merchant exporter and supplier: we source agricultural commodities and food products from suppliers and coordinate packing, inspection and shipment for our buyers.</p>'
+      . '<p>By using this website or placing an enquiry or order with us, you agree to these terms. Where a written quotation, proforma invoice or order confirmation contains different terms, that document prevails for that order.</p>'],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">2. Natural Variations in Products</h4>
-                    <p>We deal in natural agricultural produce (spices, dry fruits, seeds). Minor variations in color, size, aroma, or texture may occur between harvest batches, which are natural characteristics and not defects[cite: 25].</p>
+    ['Using this website',
+        '<p>The website is provided to give information about our products and to let you send us an enquiry. Product descriptions and images are indicative. Nothing on the website is an offer to sell. You agree not to:</p>' . legal_ul([
+            'send false or misleading enquiries,',
+            'use automated tools to copy the website or overload it,',
+            'try to gain unauthorised access to the website or its data,',
+            'use the website for any unlawful purpose.',
+        ])],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">3. Pricing and Import Duties</h4>
-                    <p>Domestic prices include applicable taxes unless specified[cite: 25]. For international shipments, the buyer is solely responsible for all destination customs duties, import taxes, and local levies[cite: 25].</p>
+    ['Enquiries, quotations and orders',
+        '<p>Price is on enquiry because it depends on the product specification, quantity, packing, destination and the trade terms you choose. A quotation is valid for the period stated in it. An order is binding only when both parties have confirmed it in writing, and it then covers the product, specification, quantity, packing, price, payment terms, trade terms and shipment details stated in that confirmation.</p>'],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">4. Culinary Disclaimer</h4>
-                    <p>Information on our website regarding spice benefits is for general culinary and informational purposes and does not substitute medical advice[cite: 25].</p>
+    ['Prices, taxes and trade terms',
+        '<p>Trade terms such as FOB or CIF are agreed for each order. Unless the order confirmation says otherwise:</p>' . legal_ul([
+            'applicable Indian taxes, where they apply, are shown in the quotation or invoice as the law requires;',
+            'customs duties, import taxes, levies and clearance charges at the destination are the buyer\'s responsibility;',
+            'risk in the goods passes as set out in the agreed trade term.',
+        ])],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">5. Governing Law</h4>
-                    <p>Any disputes arising from purchases or website usage shall be governed by the laws of India and subject to local jurisdiction[cite: 25].</p>
+    ['Quality and natural variation',
+        '<p>Our products are agricultural commodities. Small differences in colour, size, aroma or texture between lots are natural and are not defects. Grade, size, quality parameters and packing are agreed with you before the order, and quality inspection is arranged as mutually agreed. Goods are measured against the agreed specification.</p>'],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">6. Contact Information</h4>
-                    <div class="p-3 mt-3 rounded" style="background-color: #f1f5f9; border-left: 4px solid var(--primary-green, #2b5e2c);">
-                        <p class="mb-1"><strong>Bhagirath Enterprises</strong></p>
-                        <p class="mb-1"><strong>Email:</strong> support@bhagirathenterprises.com</p>
-                        <p class="mb-0"><strong>Phone:</strong> +91-8448211202</p>
-                    </div>
-                </div>
-            </div>
+    ['Packing, shipment and delivery',
+        '<p>Packing is customised to your requirement, subject to product and supplier capability. Shipment is coordinated as mutually agreed. Dates we give are estimates, not guarantees. See our <a href="' . e(url('shipping-return')) . '">Shipping &amp; Delivery Policy</a> for more.</p>'],
 
-            <!-- RIGHT COLUMN: Sidebar Widgets -->
-            <div class="col-lg-4">
-                <div class="sidebar-widgets position-sticky" style="top: 20px;">
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2">Search Products</h5>
-                        <form action="products.php" method="GET" class="d-flex">
-                            <input type="text" name="search" class="form-control me-2" placeholder="Search..." required style="font-size: 0.9rem;">
-                            <button type="submit" class="btn text-white px-3" style="background: var(--primary-green, #2b5e2c);"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
+    ['Payment',
+        '<p>Payment terms, mode of payment and any advance are agreed for each order and written in the quotation or proforma invoice. We do not take payments through this website.</p>'],
 
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2">Categories</h5>
-                        <ul class="list-unstyled mb-0 category-list">
-                            <?php
-                            $catQuery = mysqli_query($conn, "SELECT * FROM categories WHERE status = 1");
-                            if ($catQuery && mysqli_num_rows($catQuery) > 0) {
-                                while($catRow = mysqli_fetch_assoc($catQuery)) {
-                            ?>
-                            <li class="mb-2 pb-2 border-bottom">
-                                <a href="category.php?slug=<?= htmlspecialchars($catRow['slug_url']) ?>" class="text-decoration-none d-flex justify-content-between align-items-center text-muted" style="font-size: 0.95rem;">
-                                    <span><i class="fa-solid fa-angle-right me-2" style="font-size: 0.75rem;"></i> <?= htmlspecialchars($catRow['categories']) ?></span>
-                                </a>
-                            </li>
-                            <?php 
-                                }
-                            }
-                            ?>
-                        </ul>
-                    </div>
+    ['Cancellations, claims and refunds',
+        '<p>Cancellation of a confirmed order, claims for goods that do not match the agreed specification, and refunds are covered in our <a href="' . e(url('refund-policy')) . '">Refund &amp; Cancellation Policy</a>.</p>'],
 
-                    <div class="widget-box rounded shadow-sm text-center p-4 text-white" style="background: linear-gradient(135deg, var(--primary-green, #2b5e2c) 0%, #1a3f1b 100%);">
-                        <div class="icon-wrap mb-3"><i class="fa-solid fa-headset fs-1 text-white opacity-75"></i></div>
-                        <h4 class="fw-bold mb-2 text-white">Wholesale Inquiries</h4>
-                        <p class="small mb-4 opacity-75">Get in touch for bulk orders and export pricing.</p>
-                        <a href="contact.php" class="btn bg-white w-100 fw-bold shadow-sm mb-3" style="color: var(--primary-green, #2b5e2c);">Request Quote</a>
-                        <a href="tel:+918448211202" class="text-white text-decoration-none small fw-bold"><i class="fa-solid fa-phone me-1"></i> +91-8448211202</a>
-                    </div>
-                </div>
-            </div>
+    ['Events beyond our control',
+        '<p>We are not responsible for delay or failure caused by events beyond our reasonable control, including bad weather or crop failure, government orders or changes in export or import rules, strikes, port or shipping disruption, transport breakdown, fire, flood or epidemic. We will inform you as soon as reasonably possible and work with you on a practical solution.</p>'],
 
-        </div>
-    </div>
-</section>
+    ['Intellectual property',
+        '<p>The website text, design, logo and other material belong to ' . e(COMPANY['legal']) . ' or are used with permission. You may not copy or reuse them without our written consent.</p>'],
 
-<?php 
-include ('includes/inquiry-form.php');
-include 'includes/footer.php'; 
-?>
+    ['Information on this website',
+        '<p>Information about the uses of spices and other products is general and for culinary and trade information only. It is not medical advice. We try to keep the website accurate and up to date but do not promise that it is free of errors.</p>'],
+
+    ['Limit of liability',
+        '<p>To the extent the law allows, we are not liable for indirect or consequential loss, loss of profit or loss of business. Our liability for any claim relating to an order is limited to the value of the affected goods. Nothing in these terms limits liability that cannot be limited by law.</p>'],
+
+    ['Governing law',
+        '<p>These terms are governed by the laws of India. Any dispute will be subject to the jurisdiction of the courts at Nashik, Maharashtra, unless the parties agree otherwise in writing.</p>'],
+
+    ['Changes to these terms',
+        '<p>We may update these terms from time to time. The date at the top of this page shows when they were last changed. Terms agreed in writing for a confirmed order are not changed by later updates to this page.</p>'],
+
+    ['Contact us',
+        '<p>For any question about these terms, contact:</p>' . legal_contact_html($contact)],
+];
+
+require __DIR__ . '/includes/legal-layout.php';

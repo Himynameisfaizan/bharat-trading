@@ -1,252 +1,133 @@
 <?php
-include('config/connect.php');
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/custom-pages.php';
 
-$slug = isset($_GET['slug']) ? mysqli_real_escape_string($conn, $_GET['slug']) : '';
+$contact    = get_contact();
+$slug       = qs('slug');
+$cp         = get_custom_page($slug);
+$active_key = '';
+$extra_css  = ['legal.css'];
+$extra_js   = ['pages.js'];
 
-$pageQuery = mysqli_query($conn, "SELECT * FROM custom_pages WHERE slug_url = '$slug' AND status = 1");
-$pageData = mysqli_fetch_assoc($pageQuery);
-
-if (!$pageData) {
-    echo "<script>window.location.href='index.php';</script>";
+/* ---------- page not found or switched off in the admin panel ---------- */
+if (!$cp) {
+    http_response_code(404);
+    $page_title   = 'Page not found | Bharat Trading';
+    $page_desc    = 'This page could not be found.';
+    $page_keys    = '';
+    $extra_head   = '<meta name="robots" content="noindex,follow">';
+    $banner_title = 'Page not found';
+    $banner_sub   = 'The page you are looking for is not available at this address.';
+    $crumbs       = [['Pages', url('locations')], ['Not found', null]];
+    require __DIR__ . '/includes/header.php';
+    require __DIR__ . '/includes/page-banner.php';
+    ?>
+<main id="main">
+    <section class="section">
+        <div class="container">
+            <div class="empty">
+                <h2>Let us help you find it</h2>
+                <p>The link may be old, or the page may have been removed. You can browse our other pages or write to
+                    us.</p>
+                <div class="empty-actions"><a class="btn btn-brand" href="<?= e(url('locations')) ?>">Browse pages</a><a
+                        class="btn btn-gold" href="<?= e(url('contact')) ?>#inquiry">Contact us</a></div>
+            </div>
+        </div>
+    </section>
+</main>
+<?php
+    require __DIR__ . '/includes/footer.php';
     exit;
 }
 
-$blogQuery = mysqli_query($conn, "SELECT * FROM blogs WHERE slug = '$slug' AND status = 1");
-$blog = mysqli_fetch_assoc($blogQuery);
+/* ---------- page setup ---------- */
+$canonical  = url('page/' . rawurlencode($cp['slug']));
+$page_title = mb_strlen($cp['meta']['title']) >= 12 ? $cp['meta']['title'] : $cp['title'] . ' | ' . COMPANY['name'];
+$page_desc  = mb_strlen($cp['meta']['desc'])  >= 30 ? $cp['meta']['desc']  : $cp['text'];
+$page_keys  = $cp['meta']['keys'] !== '' ? $cp['meta']['keys'] : $cp['title'] . ', ' . COMPANY['name'];
+$extra_head = $cp['schema'];                                   // JSON-LD typed in the admin panel (only if valid)
 
-$cate_id = $category['cate_id'] ?? '';
-$cat_primary_id = $category['id'] ?? ''; 
-$categoryName = $category['categories'] ?? '';
+$banner_title = $cp['title'];
+$banner_class = mb_strlen($cp['title']) > 42 ? 'pbanner-title--long' : '';
+$banner_small = true;
+$banner_extra = $cp['date'] !== '' ? '<span>' . icon('clock') . 'Published ' . e($cp['date']) . '</span>' : '';
+$crumbs       = [['Locations', url('locations')], [$cp['crumb'], null]];
 
-$pageTitle = !empty($pageData['meta_title']) ? $pageData['meta_title'] : $pageData['page_title'];
-$meta_description = !empty($pageData['meta_desc']) ? $pageData['meta_desc'] : strip_tags(substr($pageData['content'], 0, 160));
-$meta_keywords = $pageData['meta_key'] ?? '';
-// Breadcrumb ke liye variable 
-$breadcrumb_name = $pageData['breadcrumb_title']; 
+$others  = get_custom_pages(8, $cp['slug']);
+$share_u = rawurlencode($canonical);
+$share_t = rawurlencode($cp['title']);
 
-$raw_schema = trim($pageData['schema_markup'] ?? '');
-if (!empty($raw_schema)) {
-    if (stripos($raw_schema, '<script') === false) {
-        $page_schema = "<script type=\"application/ld+json\">\n" . $raw_schema . "\n</script>";
-    } else {
-        $page_schema = $raw_schema;
-    }
-} else {
-    $page_schema = "";
-}
-
-$contactQuery = mysqli_query($conn, "SELECT phone FROM contacts LIMIT 1");
-$contactInfo = mysqli_fetch_assoc($contactQuery);
-$sitePhone = !empty($contactInfo['phone']) ? $contactInfo['phone'] : '+91-8448211202';
-
-include 'includes/header.php';
+require __DIR__ . '/includes/header.php';
+require __DIR__ . '/includes/page-banner.php';
 ?>
+<main id="main">
+    <div class="read-progress" id="readProgress" aria-hidden="true"></div>
 
-<style>
-/* Premium Hero & Overlap Design */
-.custom-page-hero {
-    background-color: #1a1a1a;
-    background-image: url('https://via.placeholder.com/1920x500/1a1a1a/444444');
-    /* Replace with dynamic banner if available */
-    background-size: cover;
-    background-position: center;
-    position: relative;
-    padding: 120px 0 140px 0;
-    /* Extra bottom padding for overlap */
-    color: #ffffff;
-    text-align: center;
-}
+    <section class="section art-sec">
+        <div class="container art-layout">
 
-.custom-page-hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.65);
-}
-
-.hero-content-wrapper {
-    position: relative;
-    z-index: 2;
-}
-
-.overlapping-content-section {
-    margin-top: -80px;
-    /* Pulls content up over the hero section */
-    position: relative;
-    z-index: 10;
-}
-
-.page-content-box {
-    background: #ffffff;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-}
-
-.page-content-body img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 15px 0;
-}
-
-.page-content-body h1,
-.page-content-body h2,
-.page-content-body h3 {
-    color: #222;
-    margin-top: 25px;
-    margin-bottom: 15px;
-    font-weight: 700;
-}
-
-.category-list li:last-child {
-    border-bottom: none !important;
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
-}
-
-.category-list a:hover {
-    color: var(--primary-green, #7bc243) !important;
-    padding-left: 5px;
-    transition: 0.2s;
-}
-
-.active-cat {
-    color: var(--primary-green, #7bc243) !important;
-}
-
-@keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.animate-fade-up {
-    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-</style>
-
-<!-- Premium Hero Section -->
-<section class="custom-page-hero animate-fade-up">
-    <div class="container hero-content-wrapper">
-        <h1 class="display-4 fw-bold mb-3"><?= htmlspecialchars($pageData['page_title']); ?></h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb justify-content-center text-light mb-0"
-                style="background:transparent; font-size:1rem;">
-                <li class="breadcrumb-item"><a href="index.php" class="text-white text-decoration-none">Home</a></li>
-                <li class="breadcrumb-item"><a href="location.php" class="text-white text-decoration-none">Locations</a>
-                </li>
-                <li class="breadcrumb-item active text-white opacity-75" aria-current="page">
-                    <?= htmlspecialchars($breadcrumb_name); ?></li>
-            </ol>
-        </nav>
-    </div>
-</section>
-
-<!-- Main Page Content -->
-<section class="overlapping-content-section pb-5 bg-light">
-    <div class="container animate-fade-up" style="animation-delay: 0.2s;">
-        <div class="row g-5">
-
-            <!-- LEFT COLUMN: Content Area -->
-            <div class="col-lg-8">
-                <div class="page-content-box border">
-
-                    <div class="page-content-body" style="line-height: 1.8; color: #444; font-size: 1.05rem;">
-                        <?= $pageData['content']; ?>
-                    </div>
-
-                    <!-- Social Share Links -->
-                    <div class="social-share mt-5 pt-4 border-top d-flex align-items-center">
-                        <span class="fw-bold me-3 text-dark">Share this:</span>
-                        <?php $current_url = "https://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode($current_url) ?>"
-                            target="_blank" class="btn btn-sm btn-outline-primary me-2 rounded-circle"
-                            style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;"><i
-                                class="fa-brands fa-facebook-f"></i></a>
-                        <a href="https://twitter.com/intent/tweet?url=<?= urlencode($current_url) ?>" target="_blank"
-                            class="btn btn-sm btn-outline-info me-2 rounded-circle"
-                            style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;"><i
-                                class="fa-brands fa-twitter"></i></a>
-                        <a href="https://wa.me/?text=<?= urlencode($current_url) ?>" target="_blank"
-                            class="btn btn-sm btn-outline-success me-2 rounded-circle"
-                            style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;"><i
-                                class="fa-brands fa-whatsapp"></i></a>
-                        <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?= urlencode($current_url) ?>"
-                            target="_blank" class="btn btn-sm btn-outline-secondary rounded-circle"
-                            style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;"><i
-                                class="fa-brands fa-linkedin-in"></i></a>
-                    </div>
+            <article class="art-main">
+                <?php if (trim(strip_tags($cp['html'], '<img>')) !== ''): ?>
+                <div class="article" id="articleBody"><?= $cp['html'] ?></div>
+                <?php else: ?>
+                <div class="empty">
+                    <h3>This page is being prepared</h3>
+                    <p>Please check back soon, or contact us directly.</p>
                 </div>
-            </div>
+                <?php endif; ?>
 
-            <!-- RIGHT COLUMN: Sidebar -->
-            <div class="col-lg-4">
-                <div class="sidebar-widgets position-sticky" style="top: 20px;">
-
-                    <!-- Search Widget -->
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2">Search</h5>
-                        <form action="blog.php" method="GET" class="d-flex">
-                            <input type="text" name="search" class="form-control me-2" placeholder="Search..." required
-                                style="font-size: 0.9rem;">
-                            <button type="submit" class="btn text-white px-3"
-                                style="background: var(--primary-green, #7bc243);"><i
-                                    class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
+                <footer class="art-end">
+                    <div class="art-author"><span class="owner-av"><?= e(initials(COMPANY['owner'])) ?></span>
+                        <div><b><?= e(COMPANY['legal']) ?></b><span>Merchant exporter, Nashik, India</span></div>
                     </div>
-
-                    <!-- Dynamic Categories -->
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2" style="font-size: 1.1rem; color: #222;">Categories
-                        </h5>
-                        <ul class="list-unstyled mb-0 category-list">
-                            <?php
-                            $sideCatQuery = mysqli_query($conn, "SELECT * FROM categories WHERE status = 1 ORDER BY id DESC");
-                            while($sideCat = mysqli_fetch_assoc($sideCatQuery)):
-                                $isActive = ($sideCat['cate_id'] == $cate_id || $sideCat['slug_url'] == $slug) ? 'fw-bold active-cat' : 'text-muted';
-                            ?>
-                            <li class="mb-2 pb-2 border-bottom" style="border-color: #f8f9fa !important;">
-                                <a href="category.php?slug=<?= htmlspecialchars($sideCat['slug_url']) ?>"
-                                    class="text-decoration-none d-flex justify-content-between align-items-center category-link <?= $isActive ?>"
-                                    style="font-size: 0.95rem;">
-                                    <span><i class="fa-solid fa-angle-right me-2" style="font-size: 0.75rem;"></i>
-                                        <?= htmlspecialchars($sideCat['categories']) ?></span>
-                                </a>
-                            </li>
-                            <?php endwhile; ?>
-                        </ul>
+                    <div class="art-share">
+                        <span>Share</span>
+                        <a href="https://wa.me/?text=<?= $share_t ?>%20<?= $share_u ?>" target="_blank" rel="noopener"
+                            aria-label="Share on WhatsApp"><?= icon('wa') ?></a>
+                        <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= $share_u ?>" target="_blank"
+                            rel="noopener" aria-label="Share on LinkedIn"><?= icon('linkedin') ?></a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= $share_u ?>" target="_blank"
+                            rel="noopener" aria-label="Share on Facebook"><?= icon('facebook') ?></a>
+                        <a href="https://twitter.com/intent/tweet?url=<?= $share_u ?>&amp;text=<?= $share_t ?>"
+                            target="_blank" rel="noopener" aria-label="Share on X"><?= icon('twitter') ?></a>
                     </div>
+                </footer>
+            </article>
 
-                    <!-- Request Quote Banner -->
-                    <div class="widget-box rounded shadow-sm text-center p-4 text-white"
-                        style="background: linear-gradient(135deg, var(--primary-green, #7bc243) 0%, #1a3f1b 100%);">
-                        <div class="icon-wrap mb-3"><i class="fa-solid fa-headset fs-1 text-white opacity-75"></i></div>
-                        <h4 class="fw-bold mb-2 text-white">Need Consultation?</h4>
-                        <p class="small mb-4 opacity-75">Reach out to our experts today for customized solutions and
-                            pricing.</p>
-                        <a href="contact.php" class="btn bg-white w-100 fw-bold shadow-sm mb-3"
-                            style="color: var(--primary-green, #7bc243);">Request Quote</a>
-                        <a href="tel:<?= htmlspecialchars($sitePhone) ?>"
-                            class="text-white text-decoration-none small fw-bold"><i class="fa-solid fa-phone me-1"></i>
-                            <?= htmlspecialchars($sitePhone) ?></a>
-                    </div>
+            <aside class="art-aside">
+                <?php if (count($cp['toc']) > 1): ?>
+                <nav class="aside-card toc" aria-label="On this page">
+                    <h3>On this page</h3>
+                    <ol><?php foreach ($cp['toc'] as $t): ?><li><a href="#<?= e($t[0]) ?>"><?= e($t[1]) ?></a></li>
+                        <?php endforeach; ?></ol>
+                </nav>
+                <?php endif; ?>
 
+                <?php if ($others): ?>
+                <nav class="aside-card legal-links" aria-label="More pages">
+                    <h3>More pages</h3>
+                    <ul>
+                        <?php foreach ($others as $o): ?><li><a
+                                href="<?= e(url($o['url'])) ?>"><span><?= e($o['title']) ?></span><?= icon('arrow') ?></a>
+                        </li><?php endforeach; ?>
+                        <li><a href="<?= e(url('locations')) ?>"><span><strong>View all
+                                        pages</strong></span><?= icon('arrow') ?></a></li>
+                    </ul>
+                </nav>
+                <?php endif; ?>
+
+                <div class="aside-card aside-card--dark art-cta">
+                    <h3>Need a quotation?</h3>
+                    <p>Share your product, quantity and destination. We will respond with a quotation.</p>
+                    <a class="btn btn-gold btn-block" href="<?= e(url('contact')) ?>#inquiry">Request a quote</a>
+                    <a class="art-cta-phone"
+                        href="<?= e($contact['tel']) ?>"><?= icon('phone') ?><?= e($contact['phone_txt']) ?></a>
                 </div>
-            </div>
+            </aside>
 
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Footer Section -->
-<?php include 'includes/footer.php'; ?>
+    <?php require __DIR__ . '/includes/cta-band.php'; ?>
+</main>
+<?php require __DIR__ . '/includes/footer.php'; ?>

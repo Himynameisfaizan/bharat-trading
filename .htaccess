@@ -64,9 +64,19 @@ RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
 RewriteCond %{THE_REQUEST} ^[A-Z]+\s(/(?:[^\s?]*/)?)products\.php\?category=([^&\s]+)\sHTTP/
 RewriteRule ^ %1category/%2? [NE,R=301,L]
 
-# about.php, contact.php, products.php, blog.php   ->  /about, /contact, /products, /blog
+# page.php?slug=export-team   ->  /page/export-team   (pages made in the admin panel)
 RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
-RewriteCond %{THE_REQUEST} ^[A-Z]+\s(/(?:[^\s?]*/)?)(about|contact|products|blog)\.php(?:[?\s])
+RewriteCond %{THE_REQUEST} ^[A-Z]+\s(/(?:[^\s?]*/)?)page\.php\?(?:[^\s]*&)?slug=([^&\s]+)
+RewriteRule ^ %1page/%2? [NE,R=301,L]
+
+# location.php   ->  /locations
+RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+RewriteCond %{THE_REQUEST} ^[A-Z]+\s(/(?:[^\s?]*/)?)location\.php(?:[?\s])
+RewriteRule ^ %1locations [NE,R=301,L]
+
+# about.php, contact.php, products.php, blog.php, privacy-policy.php ...   ->  /about, /contact, /products, /blog, /privacy-policy ...
+RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
+RewriteCond %{THE_REQUEST} ^[A-Z]+\s(/(?:[^\s?]*/)?)(about|contact|products|blog|privacy-policy|terms-condition|refund-policy|shipping-return)\.php(?:[?\s])
 RewriteRule ^ %1%2 [NE,R=301,L]
 
 # index.php   ->  /
@@ -87,9 +97,11 @@ RewriteRule ^sitemap\.xml$                 sitemap.php                          
 RewriteRule ^product/([^/]+)/?$            product-details.php?slug=$1          [B,L,QSA]
 RewriteRule ^blog/([^/]+)/?$               blog-details.php?slug=$1             [B,L,QSA]
 RewriteRule ^category/([^/]+)/?$           products.php?category=$1             [B,L,QSA]
+RewriteRule ^page/([^/]+)/?$               page.php?slug=$1                     [B,L,QSA]
 RewriteRule ^(product|category)/?$         products.php                         [L]
+RewriteRule ^(page|locations)/?$           location.php                         [L]
 
-RewriteRule ^(about|contact|products|blog)/?$   $1.php                          [L,QSA]
+RewriteRule ^(about|contact|products|blog|privacy-policy|terms-condition|refund-policy|shipping-return)/?$   $1.php   [L,QSA]
 
 </IfModule>
 
@@ -113,6 +125,7 @@ RewriteRule ^(about|contact|products|blog)/?$   $1.php                          
     # Turn this on only after the live site works on HTTPS:
     # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
 </IfModule>
+
 
 # ---------------------------------------------------------------------
 #  3. SPEED  (compression and browser caching)

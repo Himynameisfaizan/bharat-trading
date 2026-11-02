@@ -2,7 +2,24 @@
 /** includes/footer.php — closes <body>. Needs $contact (set by header.php). */
 $extra_js = $extra_js ?? [];
 $f_cats = array_slice(get_categories(), 0, 6);
+require_once __DIR__ . '/custom-pages.php';
 ?>
+<style>
+.ft-legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 1.3rem
+}
+
+.ft-legal a {
+    font-size: .84rem;
+    transition: color .2s
+}
+
+.ft-legal a:hover {
+    color: hsl(var(--ah) var(--as) 68%)
+}
+</style>
 <footer class="site-footer">
     <div class="container ft-grid">
         <div class="ft-brand">
@@ -58,6 +75,11 @@ $f_cats = array_slice(get_categories(), 0, 6);
     <div class="ft-bottom">
         <div class="container ft-bottom-in">
             <p>&copy; <?= date('Y') ?> <?= e(COMPANY['legal']) ?>. All rights reserved.</p>
+            <nav class="ft-legal" aria-label="Legal">
+                <?php foreach (legal_links() as $l): ?><a
+                    href="<?= e(url($l[1])) ?>"><?= e($l[0]) ?></a><?php endforeach; ?>
+                <?php if (count_custom_pages() > 0): ?><a href="<?= e(url('locations')) ?>">Locations</a><?php endif; ?>
+            </nav>
             <p>Proprietor: <?= e(COMPANY['owner']) ?></p>
         </div>
     </div>

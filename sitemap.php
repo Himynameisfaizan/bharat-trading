@@ -4,8 +4,9 @@
  * It is served as  /sitemap.xml  (see .htaccess). New products, categories and blog posts
  * appear automatically; nothing has to be edited when content is added in the admin panel.
  *
- * URLs listed:   /   /about   /products   /blog   /contact
- *                /category/{slug}   /product/{slug}   /blog/{slug}
+ * URLs listed:   /   /about   /products   /blog   /contact   /locations
+ *                /privacy-policy   /terms-condition   /refund-policy   /shipping-return
+ *                /category/{slug}   /product/{slug}   /blog/{slug}   /page/{slug}  (admin "custom pages")
  * The domain comes from $site in config/connect.php.
  */
 ob_start();
@@ -34,6 +35,7 @@ $urls = [];   // each: [loc, lastmod, changefreq, priority]
 /* ---------- data ---------- */
 $blogs = sm_rows("SELECT slug, created_at FROM blogs WHERE status = 1 AND slug <> '' ORDER BY created_at DESC, blog_id DESC");
 $prods = sm_rows("SELECT slug_url FROM products WHERE status = 1 AND (is_disabled = 0 OR is_disabled IS NULL) AND slug_url <> '' ORDER BY id ASC");
+$cpages = sm_rows("SELECT slug_url, created_at FROM custom_pages WHERE status = 1 AND slug_url <> '' ORDER BY id DESC");
 $cats  = sm_rows("SELECT c.slug_url FROM categories c WHERE c.status = 1 AND c.slug_url <> ''
                   AND EXISTS (SELECT 1 FROM products p WHERE p.pro_cate = c.cate_id AND p.status = 1 AND (p.is_disabled = 0 OR p.is_disabled IS NULL))
                   ORDER BY c.id ASC");
@@ -48,6 +50,9 @@ foreach ($blogs as $b) { $latest_post = max($latest_post, (int)strtotime((string
 /* ---------- main pages ---------- */
 $pages = [['', 'index.php', 'weekly', '1.0'], ['about', 'about.php', 'monthly', '0.8'], ['products', 'products.php', 'weekly', '0.9'],
           ['blog', 'blog.php', 'weekly', '0.7'], ['contact', 'contact.php', 'yearly', '0.7']];
+if ($cpages) { $pages[] = ['locations', 'location.php', 'weekly', '0.6']; }          // list of custom pages, only when there are any
+array_push($pages, ['privacy-policy', 'privacy-policy.php', 'yearly', '0.3'], ['terms-condition', 'terms-condition.php', 'yearly', '0.3'],
+                   ['refund-policy', 'refund-policy.php', 'yearly', '0.3'], ['shipping-return', 'shipping-return.php', 'yearly', '0.3']);
 foreach ($pages as [$path, $file, $freq, $prio]) {
     $mt = (int)@filemtime(__DIR__ . '/' . $file);
     if ($path === '' || $path === 'blog') $mt = max($mt, $latest_post);
@@ -57,15 +62,16 @@ foreach ($pages as [$path, $file, $freq, $prio]) {
 foreach ($cats  as $c) { $urls[] = [sm_loc('category/' . $c['slug_url']), '', 'weekly', '0.8']; }
 foreach ($prods as $p) { $urls[] = [sm_loc('product/'  . $p['slug_url']), '', 'monthly', '0.8']; }
 foreach ($blogs as $b) { $urls[] = [sm_loc('blog/'     . $b['slug']),     sm_date($b['created_at']), 'monthly', '0.6']; }
+foreach ($cpages as $c) { $urls[] = [sm_loc('page/'    . $c['slug_url']), sm_date($c['created_at']), 'monthly', '0.6']; }
 
 /* ---------- output ---------- */
 header('Content-Type: application/xml; charset=utf-8');
 header('Cache-Control: public, max-age=3600');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
-foreach (array_slice($urls, 0, 50000) as $u) {
-    echo "  <url>\n    <loc>" . sm_x($u[0]) . "</loc>\n";
-    if ($u[1] !== '') echo '    <lastmod>' . sm_x($u[1]) . "</lastmod>\n";
-    echo '    <changefreq>' . $u[2] . "</changefreq>\n    <priority>" . $u[3] . "</priority>\n  </url>\n";
-}
-echo "</urlset>\n";
+    foreach (array_slice($urls, 0, 50000) as $u) {
+    echo " <url>\n <loc>" . sm_x($u[0]) . "</loc>\n";
+        if ($u[1] !== '') echo ' <lastmod>' . sm_x($u[1]) . "</lastmod>\n";
+        echo ' <changefreq>' . $u[2] . "</changefreq>\n <priority>" . $u[3] . "</priority>\n </url>\n";
+    }
+    echo "</urlset>\n";

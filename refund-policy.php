@@ -1,100 +1,66 @@
 <?php
-include('config/connect.php');
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/custom-pages.php';
 
-$pageTitle = "Refund and Cancellation Policy | Bhagirath Enterprises";
-$meta_description = "Read the refund and cancellation policy of Bhagirath Enterprises for premium spices, dry fruits, seeds, and kernels orders[cite: 23].";
-$meta_key = "refund policy, cancellation policy, bhagirath enterprises, spices export";
+$contact = get_contact();
 
-include 'includes/header.php';
-include 'includes/breadcrumb.php';
-?>
+$m = page_meta('refund-policy.php', [
+    'title'    => 'Refund & Cancellation Policy | Bharat Trading, Nashik',
+    'desc'     => 'How cancellations, quality or quantity claims and refunds are handled for orders placed with Bharat Trading.',
+    'keywords' => 'refund policy, cancellation policy, export order claims, Bharat Trading',
+]);
+$page_title = $m['title']; $page_desc = $m['desc']; $page_keys = $m['keywords'];
 
-<section class="py-5" style="background-color: #f8f9fa;">
-    <div class="container">
-        <div class="row g-5">
-            
-            <!-- LEFT COLUMN: Content -->
-            <div class="col-lg-8">
-                <div class="bg-white p-4 p-md-5 rounded shadow-sm border">
-                    <h1 class="mb-4" style="color: #2b5e2c; font-weight: 700;">Refund and Cancellation Policy</h1>
-                    <p class="text-muted mb-5"><strong>Last Updated:</strong> <?= date('F d, Y'); ?></p>
+$legal_key     = 'refund-policy';
+$legal_title   = 'Refund & Cancellation Policy';
+$legal_lead    = 'What happens if an order changes, is cancelled, or does not match the agreed specification.';
+$legal_updated = date('F j, Y', (int)filemtime(__FILE__));
+$legal_glance  = [
+    'Our products are food commodities sourced and packed to your specification, so standard returns are not possible.',
+    'Once an order is confirmed, changes or cancellation need written agreement from both sides.',
+    'If goods do not match the agreed specification, send us evidence and we will settle it by agreement.',
+    'An order cannot be cancelled once it has been shipped.',
+];
 
-                    <p>At <strong>Bhagirath Enterprises</strong>, we ensure the highest quality of our agricultural commodities, including premium spices, dry fruits, seeds, and kernels[cite: 23]. Because we deal in consumable food products, our refund and cancellation policies are structured to comply with strict food safety, hygiene, and trade standards[cite: 23].</p>
+$legal_sections = [
+    ['How this policy works',
+        '<p>' . e(COMPANY['legal']) . ' is a merchant exporter. Each order is for food commodities sourced, packed and shipped to the specification agreed with the buyer. For that reason, the terms of the order confirmation or proforma invoice come first. This policy applies to everything those documents do not cover.</p>'],
 
-                    <h3 class="mt-5 mb-3" style="color: #e65c00; font-size: 1.3rem;">Cancellation Policy</h3>
-                    
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">1. Order Cancellation Before Dispatch</h4>
-                    <p>You may cancel your order within <strong>24 hours</strong> of placing it, provided it has not yet been processed, packed, or dispatched from our facility[cite: 23]. A full refund will be processed immediately upon valid request sent to our official support email[cite: 23].</p>
+    ['Before an order is confirmed',
+        '<p>An enquiry or a quotation creates no obligation. You can withdraw an enquiry at any time without any charge.</p>'],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">2. Cancellation After Dispatch</h4>
-                    <p>Due to the perishable and consumable nature of spices and dry fruits, orders <strong>cannot be cancelled</strong> once they have been handed over to our logistics partners or shipped[cite: 23].</p>
-                    
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">3. Bulk & Wholesale Orders</h4>
-                    <p>For custom-packaged or bulk container export orders of seeds and kernels, cancellations are not permitted once sourcing and processing have commenced[cite: 23]. Advance payments for bulk wholesale orders remain strictly non-refundable[cite: 23].</p>
+    ['Cancelling or changing a confirmed order',
+        '<p>After an order is confirmed in writing, cancellation or any change to quantity, specification, packing or destination needs written agreement from both parties. If sourcing, processing, custom packing, inspection, documentation or shipment booking has already started, the buyer bears the costs already incurred. Any advance paid is adjusted against those costs, and the balance, if any, is refunded as agreed.</p>'],
 
-                    <hr class="my-5">
+    ['After shipment',
+        '<p>Once goods have been handed over for shipment, the order cannot be cancelled, because the consignment is already in transit.</p>'],
 
-                    <h3 class="mb-3" style="color: #e65c00; font-size: 1.3rem;">Return and Refund Policy</h3>
-                    
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">1. Eligibility for Returns & Refunds</h4>
-                    <p>We <strong>do not accept general returns</strong> (such as change of mind) due to strict food safety and hygiene regulations[cite: 23]. However, replacements or refunds are applicable if[cite: 23]:</p>
-                    <ul>
-                        <li>The product packaging was severely damaged or compromised during transit[cite: 23].</li>
-                        <li>An incorrect product or quantity was delivered[cite: 23].</li>
-                    </ul>
-                    <p><em>Note: You must notify us within <strong>48 hours of delivery</strong> with unboxing video or photographic proof[cite: 23].</em></p>
+    ['Claims for goods that do not match the order',
+        '<p>You may raise a claim if the goods received:</p>' . legal_ul([
+            'do not match the specification agreed in the order confirmation,',
+            'are short in quantity compared with the invoice or packing list, or',
+            'arrive with packing damage that can be traced to our packing or handling.',
+        ]) . '<p>Please write to us as soon as you receive the goods, within the claim period stated in the order terms and before the goods are used, processed or resold. Include the order or invoice number and supporting evidence: clear photos or video, the packing list, any inspection or laboratory report, and the shipping documents.</p>'],
 
-                    <h4 class="mt-4" style="font-size: 1.1rem; color: #2b5e2c; font-weight: 600;">2. Refund Timeline</h4>
-                    <p>Approved refunds are credited back to the original payment method within <strong>5 to 7 business days</strong>[cite: 23].</p>
-                </div>
-            </div>
+    ['How a claim is settled',
+        '<p>We review the claim with you and, where needed, with our supplier and the inspection agency. If the claim is accepted, the remedy is agreed with you. It may be a replacement, a credit note, a price adjustment or a refund for the affected portion.</p>'],
 
-            <!-- RIGHT COLUMN: Sidebar Widgets -->
-            <div class="col-lg-4">
-                <div class="sidebar-widgets position-sticky" style="top: 20px;">
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2">Search Products</h5>
-                        <form action="products.php" method="GET" class="d-flex">
-                            <input type="text" name="search" class="form-control me-2" placeholder="Search..." required style="font-size: 0.9rem;">
-                            <button type="submit" class="btn text-white px-3" style="background: var(--primary-green, #2b5e2c);"><i class="fa-solid fa-magnifying-glass"></i></button>
-                        </form>
-                    </div>
+    ['What is not covered',
+        legal_ul([
+            'Natural variation in colour, size, aroma or texture within the agreed tolerance.',
+            'Damage or deterioration after the risk has passed to the buyer, caused by storage, handling or delay in clearance.',
+            'Delay, duty, rejection or other action by customs or authorities at the destination.',
+            'A change of mind, or goods that have already been used, processed or resold.',
+        ])],
 
-                    <div class="widget-box bg-white p-4 rounded shadow-sm border mb-4">
-                        <h5 class="fw-bold mb-3 border-bottom pb-2">Categories</h5>
-                        <ul class="list-unstyled mb-0 category-list">
-                            <?php
-                            $catQuery = mysqli_query($conn, "SELECT * FROM categories WHERE status = 1");
-                            if ($catQuery && mysqli_num_rows($catQuery) > 0) {
-                                while($catRow = mysqli_fetch_assoc($catQuery)) {
-                            ?>
-                            <li class="mb-2 pb-2 border-bottom">
-                                <a href="category.php?slug=<?= htmlspecialchars($catRow['slug_url']) ?>" class="text-decoration-none d-flex justify-content-between align-items-center text-muted" style="font-size: 0.95rem;">
-                                    <span><i class="fa-solid fa-angle-right me-2" style="font-size: 0.75rem;"></i> <?= htmlspecialchars($catRow['categories']) ?></span>
-                                </a>
-                            </li>
-                            <?php 
-                                }
-                            }
-                            ?>
-                        </ul>
-                    </div>
+    ['Returns',
+        '<p>Because these are consumable food products, we do not accept returns as a rule. Please do not send goods back without our written approval.</p>'],
 
-                    <div class="widget-box rounded shadow-sm text-center p-4 text-white" style="background: linear-gradient(135deg, var(--primary-green, #2b5e2c) 0%, #1a3f1b 100%);">
-                        <div class="icon-wrap mb-3"><i class="fa-solid fa-headset fs-1 text-white opacity-75"></i></div>
-                        <h4 class="fw-bold mb-2 text-white">Need Help?</h4>
-                        <p class="small mb-4 opacity-75">Contact our support team for any order assistance.</p>
-                        <a href="contact.php" class="btn bg-white w-100 fw-bold shadow-sm mb-3" style="color: var(--primary-green, #2b5e2c);">Contact Us</a>
-                        <a href="tel:+918448211202" class="text-white text-decoration-none small fw-bold"><i class="fa-solid fa-phone me-1"></i> +91-8448211202</a>
-                    </div>
-                </div>
-            </div>
+    ['Refunds',
+        '<p>An approved refund is paid back to the account the payment came from. We will tell you the expected timing when the refund is approved.</p>'],
 
-        </div>
-    </div>
-</section>
+    ['Contact us',
+        '<p>To cancel an order or raise a claim, contact:</p>' . legal_contact_html($contact)],
+];
 
-<?php 
-include ('includes/inquiry-form.php');
-include 'includes/footer.php'; 
-?>
+require __DIR__ . '/includes/legal-layout.php';
