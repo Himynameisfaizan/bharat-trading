@@ -610,7 +610,7 @@ function get_product_detail(string $slug): ?array
             'facts' => $facts,
             'uses' => [],
             'faqs' => product_faqs($r['pro_name']),
-            'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
+            'meta' => ['title' => trim((string)$r['meta_title']), 'desc' => trim((string)$r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
         ];
     }
     $st = static_catalogue();
@@ -802,7 +802,7 @@ function get_blog(string $slug): ?array
         'date' => fmt_date($r['created_at']),
         'iso' => date('c', (int)strtotime((string)$r['created_at'])),
         'mins' => max(1, (int)round(mb_strlen((string)$r['description']) / 1000)),
-        'meta' => ['title' => trim($r['meta_title']), 'desc' => trim($r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
+        'meta' => ['title' => trim((string)$r['meta_title']), 'desc' => trim((string)$r['meta_desc']), 'keys' => trim((string)$r['meta_key'])],
     ];
 }
 
